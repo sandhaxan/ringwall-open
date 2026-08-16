@@ -140,7 +140,7 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
   <div class="wrap">
     <div class="brand">
       <h1>Ringwall <span class="open">Open</span></h1>
-      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.2</div>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.3</div>
     </div>
   </div>
 </header>
@@ -329,7 +329,7 @@ const FIREBASE_CONFIG = {
   appId: "1:161650064745:web:d27f95a34e752a53fd51f8"
 };
 const DB_ROOT = "ringwall2026";
-const APP_VERSION = "19";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
+const APP_VERSION = "20";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
 
 /* ================= BANDATA =================
    Västerås GK 18-hålsbanan, par 70. Hål (par/index) enligt klubbens
@@ -896,9 +896,9 @@ function renderHighlights(){
   $("#hojdpunkter").innerHTML=top.length?
     `<div class="panel" style="padding:10px 14px">
       <div style="font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sand);margin-bottom:6px">Senaste händelserna</div>
-      ${top.map(x=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.84rem;padding:5px 0">
-        <span>${x.ic} ${esc(x.namn)} · ${x.pass} hål ${x.h}</span>
-        <span style="color:var(--sand);font-size:.72rem;white-space:nowrap">${x.tid}</span></div>`).join("")}
+      ${top.map(x=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.82rem;padding:5px 0">
+        <span style="min-width:0">${x.ic} ${esc(x.namn)} · <span style="white-space:nowrap">hål ${x.h}</span></span>
+        <span style="color:var(--sand);font-size:.66rem;white-space:nowrap;flex-shrink:0">${x.tid}</span></div>`).join("")}
     </div>`:"";
 }
 function renderAch(){
