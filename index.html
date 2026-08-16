@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ringwall Open</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ringwall Open">
+<meta name="theme-color" content="#122B1D">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --skog:#122B1D; --gran:#1D4230; --fairway:#3E7A50;
+  --krita:#F4F3EC; --sand:#D9D4C0; --flagga:#D8452E; --score:#F0C93C;
+  --linje:rgba(244,243,236,.14); --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{font-family:'Archivo',system-ui,sans-serif;font-variation-settings:'wdth' 100;background:var(--skog);color:var(--krita);min-height:100dvh;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+header{padding:calc(14px + env(safe-area-inset-top)) 0 10px;border-bottom:1px solid var(--linje)}
+.brand{display:flex;align-items:baseline;justify-content:space-between}
+.brand h1{font-variation-settings:'wdth' 72,'wght' 850;font-size:1.5rem;letter-spacing:.02em;text-transform:uppercase;line-height:1}
+.brand h1 .open{color:var(--score)}
+.brand .plats{font-size:.72rem;color:var(--sand);letter-spacing:.14em;text-transform:uppercase}
+.syncdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:6px;vertical-align:1px}
+.syncdot.on{background:#5FD068}.syncdot.local{background:var(--score)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(13,26,18,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--linje);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs .wrap{display:flex}
+nav.tabs button{flex:1;background:none;border:none;color:var(--sand);font-family:inherit;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;padding:10px 0 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button.act{color:var(--score)}
+nav.tabs button:focus-visible{outline:2px solid var(--score);outline-offset:-2px}
+main{padding-top:16px}
+section.tabpane{display:none}
+section.tabpane.act{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){section.tabpane.act{animation:none}}
+h2{font-variation-settings:'wdth' 72,'wght' 800;text-transform:uppercase;font-size:1.05rem;letter-spacing:.05em;margin:18px 0 10px}
+h3{font-size:.82rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sand);margin:16px 0 8px}
+p.hint{font-size:.85rem;color:var(--sand);line-height:1.5;margin:6px 0 12px}
+a{color:var(--score)}
+.panel{background:var(--gran);border:1px solid var(--linje);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.chip{border:1px solid var(--linje);background:transparent;color:var(--krita);font-family:inherit;font-size:.85rem;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer}
+.chip.act{background:var(--score);border-color:var(--score);color:#1a1a10}
+.chip.teamB.act{background:var(--flagga);border-color:var(--flagga);color:#fff}
+.chip:focus-visible{outline:2px solid var(--score);outline-offset:2px}
+.holerow{display:grid;grid-template-columns:44px 1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--linje)}
+.holerow:last-child{border-bottom:none}
+.holenr{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:1.05rem;text-align:center;background:var(--skog);border:1px solid var(--linje);border-radius:10px;padding:8px 0}
+.holemeta{font-size:.72rem;color:var(--sand);line-height:1.45}
+.holemeta b{color:var(--krita);font-weight:700}
+.slagdots{color:var(--score);letter-spacing:2px;font-size:.72rem}
+.stepper{display:flex;align-items:center;gap:2px}
+.stepper button{width:42px;height:42px;border-radius:10px;border:1px solid var(--linje);background:var(--skog);color:var(--krita);font-size:1.25rem;font-family:inherit;cursor:pointer}
+.stepper button:active{background:var(--fairway)}
+.stepper .val{width:44px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:1.2rem;font-weight:600}
+.stepper .val.tom{color:rgba(244,243,236,.3)}
+.ptsbadge{min-width:34px;text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:600;border-radius:8px;padding:6px 4px;font-size:.95rem;background:var(--skog);border:1px solid var(--linje)}
+.ptsbadge.bra{color:var(--score)}.ptsbadge.noll{color:rgba(244,243,236,.35)}
+.sumrow{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:2px solid var(--linje);font-weight:700}
+.sumrow .tot{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;color:var(--score)}
+.board{border-radius:var(--radius);overflow:hidden;border:1px solid var(--linje);margin-bottom:14px;background:var(--gran)}
+.board .versus{display:grid;grid-template-columns:1fr 52px 1fr}
+.board .side{padding:18px 12px;text-align:center}
+.board .side .lagnamn{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--sand)}
+.board .side .pts{font-family:'IBM Plex Mono',monospace;font-size:2.6rem;font-weight:600;line-height:1.1}
+.board .side.a .pts{color:var(--score)}.board .side.b .pts{color:#FF7A64}
+.board .mid{display:flex;align-items:center;justify-content:center;color:var(--sand);font-size:.8rem;letter-spacing:.1em}
+.board .leaderbar{height:5px;display:flex}
+.board .leaderbar .ba{background:var(--score)}.board .leaderbar .bb{background:var(--flagga)}
+.board .status{padding:9px 12px;text-align:center;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--sand);border-top:1px solid var(--linje)}
+table.res{width:100%;border-collapse:collapse;font-size:.85rem}
+table.res th{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sand);font-weight:600;text-align:left;padding:6px 6px;border-bottom:1px solid var(--linje)}
+table.res td{padding:8px 6px;border-bottom:1px solid var(--linje)}
+table.res td.num{font-family:'IBM Plex Mono',monospace;text-align:right}
+table.res tr:last-child td{border-bottom:none}
+.tagA,.tagB,.tagC,.tagD{display:inline-block;font-size:.62rem;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:6px}
+.tagA{background:var(--score);color:#1a1a10}.tagB{background:var(--flagga);color:#fff}
+.tagC{background:#7FA8E8;color:#0e1a2a}.tagD{background:#E5A05A;color:#1a1206}
+.chip.teamC.act{background:#7FA8E8;border-color:#7FA8E8;color:#0e1a2a}
+.chip.teamD.act{background:#E5A05A;border-color:#E5A05A;color:#1a1206}
+.holecard{background:var(--gran);border:1px solid var(--linje);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.holecard .top{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
+.holecard .nr{font-family:'IBM Plex Mono',monospace;font-size:1.7rem;font-weight:600;color:var(--score)}
+.holecard .parline{font-size:.78rem;color:var(--sand);letter-spacing:.08em;text-transform:uppercase}
+.teebar{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.tee{font-family:'IBM Plex Mono',monospace;font-size:.72rem;padding:4px 8px;border-radius:7px;border:1px solid var(--linje)}
+.tee i{font-style:normal;display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.tee.gul i{background:#F0C93C}.tee.bla i{background:#5B8DD9}.tee.rod i{background:#D8452E}.tee.orange i{background:#E58A2F}
+.holecard .tips{font-size:.85rem;line-height:1.55;color:var(--krita)}
+details.faq{border:1px solid var(--linje);border-radius:var(--radius);background:var(--gran);margin-bottom:10px;overflow:hidden}
+details.faq summary{list-style:none;cursor:pointer;padding:13px 14px;font-weight:700;font-size:.9rem;display:flex;justify-content:space-between;align-items:center;gap:10px}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq summary::after{content:'+';font-family:'IBM Plex Mono',monospace;color:var(--score);font-size:1.1rem}
+details.faq[open] summary::after{content:'–'}
+details.faq .inner{padding:0 14px 14px;font-size:.87rem;line-height:1.6;color:var(--sand);white-space:pre-line}
+details.faq .inner b{color:var(--krita)}
+table.schema{width:100%;border-collapse:collapse;font-size:.84rem;margin:4px 0}
+table.schema td{padding:7px 6px;border-bottom:1px solid var(--linje);vertical-align:top}
+table.schema td:first-child{font-family:'IBM Plex Mono',monospace;white-space:nowrap;color:var(--score)}
+table.schema tr:last-child td{border-bottom:none}
+input[type=text],input[type=number],input[type=password],select,textarea{width:100%;background:var(--skog);border:1px solid var(--linje);border-radius:10px;color:var(--krita);font-family:inherit;font-size:16px;padding:10px 12px}
+textarea{min-height:84px;line-height:1.5}
+label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sand);margin:10px 0 4px}
+.btn{display:inline-block;background:var(--score);color:#1a1a10;border:none;border-radius:10px;font-family:inherit;font-weight:700;font-size:.9rem;padding:11px 18px;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid var(--linje);color:var(--krita)}
+.btn.fara{background:var(--flagga);color:#fff}
+.btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.spelarrad{display:grid;grid-template-columns:1fr 62px 70px 40px;gap:6px;align-items:center;margin-bottom:4px}
+.spelarrad2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:12px}
+.spelarrad input,.spelarrad select,.spelarrad2 select{padding:8px 8px;font-size:.85rem}
+.delx{width:40px;height:40px;border-radius:10px;border:1px solid var(--linje);background:transparent;color:var(--flagga);font-size:1.1rem;cursor:pointer}
+.notis{background:rgba(240,201,60,.1);border:1px solid rgba(240,201,60,.4);border-radius:var(--radius);padding:12px 14px;font-size:.84rem;line-height:1.55;margin-bottom:14px;color:var(--krita)}
+.notis code{font-family:'IBM Plex Mono',monospace;font-size:.78rem;background:var(--skog);padding:1px 5px;border-radius:5px}
+.tomt{padding:28px 10px;text-align:center;color:var(--sand);font-size:.88rem;line-height:1.6}
+.ratgrid{display:grid;grid-template-columns:70px 1fr 1fr;gap:6px;align-items:center;margin-bottom:4px;font-size:.8rem}
+.ratgrid input{padding:7px 8px;font-size:.85rem;font-family:'IBM Plex Mono',monospace}
+.ratgrid .lbl{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--sand)}
+#modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:20px}
+#modal .ruta{background:var(--gran);border:1px solid var(--linje);border-radius:var(--radius);padding:18px;max-width:340px;width:100%}
+#modal .ruta p{font-size:.92rem;line-height:1.55;white-space:pre-line;margin-bottom:16px}
+#modal .knappar{display:flex;gap:8px;justify-content:flex-end}
+#toast{display:none;position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:99;background:var(--gran);border:1px solid var(--score);border-radius:12px;padding:12px 14px;font-size:.86rem;line-height:1.45;box-shadow:0 6px 24px rgba(0,0,0,.4);max-width:600px;margin:0 auto}
+#adminlock{max-width:360px;margin:30px auto;text-align:center}
+#adminlock svg{width:38px;height:38px;stroke:var(--score);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <h1>Ringwall <span class="open">Open</span></h1>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.0</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="tabpane" id="pane-score">
+    <div id="score-setupnotis"></div>
+    <div id="startlista"></div>
+    <h2>För score</h2>
+    <p class="hint" id="vemrad" style="margin:2px 0 0"></p>
+    <div class="chiprow" id="passval"></div>
+    <div class="chiprow" id="enhetsval"></div>
+    <div class="panel" id="scoregrid"></div>
+  </section>
+
+  <section class="tabpane" id="pane-stallning">
+    <h2>Lagtävlingen</h2>
+    <div id="tavlan"></div>
+    <div id="hojdpunkter"></div>
+    <h3 id="fm-rubrik">Förmiddag — Bästboll, Västerås GK (18 hål)</h3>
+    <div class="panel" id="res-fm"></div>
+    <h3>Eftermiddag — Scramble, EnviLoopen (9 hål)</h3>
+    <div class="panel" id="res-em"></div>
+    <h3>Individuellt (Stableford, förmiddagsronden)</h3>
+    <div class="panel" id="res-ind"></div>
+    <h3>Utmärkelser</h3>
+    <div class="panel" id="res-ach"></div>
+  </section>
+
+  <section class="tabpane" id="pane-banan">
+    <h2 id="ban-fm-rubrik">Förmiddag — Västerås GK</h2>
+    <p class="hint" id="ban-fm-text"></p>
+    <div id="banlista-vgk"></div>
+    <h2 style="margin-top:26px">Eftermiddag — EnviLoopen, Skerike GK</h2>
+    <p class="hint">Par 31 över 9 hål: sex par 3, två par 4 och en par 5. Öppen hedbana med små greener — precision slår kraft här. Mer info i <a href="https://skerikegk.se/spela/9-halsbanan/" target="_blank" rel="noopener">klubbens banguide</a>.</p>
+    <div id="banlista-envi"></div>
+  </section>
+
+  <section class="tabpane" id="pane-info">
+    <h2>Info &amp; FAQ</h2>
+    <div id="infolista"></div>
+  </section>
+
+  <section class="tabpane" id="pane-admin">
+    <div id="adminlock">
+      <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      <h2 style="margin-top:0">Admin är låst</h2>
+      <p class="hint">Endast tävlingsledningen kan ändra spelare, lag, par och inställningar.</p>
+      <input type="password" id="adminpw" placeholder="Lösenord" autocomplete="current-password">
+      <div style="margin-top:10px"><button class="btn" id="btn-unlock">Lås upp</button></div>
+      <p class="hint" id="pwfel" style="color:var(--flagga);display:none;margin-top:10px">Fel lösenord.</p>
+    </div>
+
+    <div id="adminbody" style="display:none">
+      <h2>Admin</h2>
+      <div class="panel">
+        <h3 style="margin-top:0">Spelare</h3>
+        <p class="hint" style="margin-top:0">Alla spelar från gul tee på båda banorna. Herrklass. Bollarna bildas automatiskt av lagen — man spelar med sitt lag, max 4 per boll.</p>
+        <label class="fld">Antal lag</label>
+        <select id="set-numteams" onchange="dbSet('settings/numTeams',this.value)">
+          <option value="2">2 lag</option><option value="3">3 lag</option><option value="4">4 lag</option>
+        </select>
+        <div style="height:10px"></div>
+        <div id="spelarlista"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn ghost" id="btn-nyspelare">+ Lägg till spelare</button>
+          <button class="btn" id="btn-snake">Snake draft → lag</button>
+        </div>
+        <p class="hint" style="margin-top:10px">Snake draft sorterar på exakt hcp och fördelar i sicksack över valt antal lag (A-B-B-A vid två lag, A-B-C-C-B-A vid tre, osv). Funkar även vid ojämnt antal spelare.</p>
+        <div style="border-top:1px solid var(--linje);margin-top:12px;padding-top:12px">
+          <label class="fld">Låtsasspelare för test</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="number" id="mock-antal" min="1" max="12" value="8" inputmode="numeric" style="width:76px">
+            <button class="btn ghost" id="btn-mock">Skapa</button>
+            <button class="btn ghost" id="btn-mockclear" style="color:var(--flagga)">Rensa alla (test)</button>
+          </div>
+          <p class="hint" style="margin-top:8px">Golfklingande namn med slumpad hcp 4,0–36,0. Rensningen tar bara låtsasspelarna, deras scores och scramble-lag — riktiga spelare rörs aldrig.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Startlista (förmiddag)</h3>
+        <p class="hint" style="margin-top:0">Bollarna bildas automatiskt av lagen — max 4 per boll, större lag delas jämnt. Sätt starttider här; listan visas överst på Score-fliken.</p>
+        <div id="bolltider"></div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Scramble-lag (eftermiddag)</h3>
+        <p class="hint" style="margin-top:0">Lag om två (35 % + 15 %) eller tre (20 % + 15 % + 10 % av lägsta/mellersta/högsta 9-håls-spelhcp). Autobygget gör par vid jämn lagstorlek och en trio vid udda — ingen står utanför.</p>
+        <div id="parlista"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn ghost" id="btn-nyttpar">+ Nytt scramble-lag</button>
+          <button class="btn" id="btn-autopar">Bilda automatiskt från lagen</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Banvärden (CR / Slope)</h3>
+        <p class="hint" style="margin-top:0">Gul tee, herrar. EnviLoopens värden är klubbens officiella (värderad 2021, angivna för 2 varv — appen räknar om till 9 hål). <b>Verifiera Västerås GK mot klubbens slopetabell på plats</b> — deras värden går inte att hämta maskinellt och banan byggdes om 2019.</p>
+        <div id="ratinglista"></div>
+        <div style="margin-top:10px"><button class="btn" id="btn-saveratings">Spara banvärden</button></div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Info-texter</h3>
+        <label class="fld">Schema &amp; hålltider</label>
+        <textarea id="set-schema"></textarea>
+        <label class="fld">Sidotävlingar</label>
+        <textarea id="set-sidor"></textarea>
+        <label class="fld">Övrig praktisk info</label>
+        <textarea id="set-ovrigt"></textarea>
+        <div style="margin-top:12px"><button class="btn" id="btn-savesettings">Spara texter</button></div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Admin-lösenord</h3>
+        <input type="password" id="newpw" placeholder="Nytt lösenord" autocomplete="new-password">
+        <div style="margin-top:10px"><button class="btn ghost" id="btn-setpw">Byt lösenord</button></div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Inlämnade ronder</h3>
+        <p class="hint" style="margin-top:0">Lås upp om någon lämnat in med en typo — spelaren rättar och lämnar in igen. Inga siffror försvinner vid upplåsning.</p>
+        <div id="laslista"></div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Sidotävlingarnas emblem</h3>
+        <p class="hint" style="margin-top:0">Delas ut manuellt efter rundan — syns direkt under Utmärkelser i ställningen.</p>
+        <label class="fld">📏 Längsta drive</label>
+        <select id="aw-drive"></select>
+        <label class="fld">📍 Närmast hål</label>
+        <select id="aw-narmast"></select>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Slutresultat</h3>
+        <p class="hint" style="margin-top:0">När sista ronden är inlämnad: fastställ resultatet. All scoreändring spärras och vinnaren visas stort på tavlan. Kan återöppnas när som helst — inga siffror rörs.</p>
+        <button class="btn ghost" id="btn-final">Avsluta tävlingen 🏆</button>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Testläge</h3>
+        <p class="hint" style="margin-top:0">Byter förmiddagsbanan till Sollentuna GK i hela appen — score, spelhandicap, bästboll och banguide — så att allt kan testas skarpt före tävlingsdagen. Alla ser en tydlig testläge-banner. Vid växling nollställs förmiddagens scores, eftersom par och index skiljer sig mellan banorna.</p>
+        <button class="btn ghost" id="btn-testmode">Aktivera testläge (Sollentuna GK)</button>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Farligt</h3>
+        <button class="btn fara" id="btn-reset">Nollställ alla scores</button>
+        <p class="hint" style="margin-top:8px">Tar bort alla inmatade resultat men behåller spelare, lag och par. Kan inte ångras.</p>
+        <button class="btn ghost" id="btn-clearcache" style="margin-top:6px">Rensa lokal cache på denna enhet</button>
+        <p class="hint" style="margin-top:8px">Laddar om appen med färsk data. Löser konstigheter efter uppdateringar av appen.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="modal"><div class="ruta"><p id="modaltext"></p><div class="knappar">
+  <button class="btn ghost" onclick="fragaSvar(false)">Avbryt</button>
+  <button class="btn" onclick="fragaSvar(true)">OK</button>
+</div></div></div>
+<div id="toast"></div>
+
+<nav class="tabs">
+  <div class="wrap">
+    <button data-tab="score" class="act"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 20V9l6-5 6 5v11"/><path d="M10 20v-5h4v5"/></svg>Score</button>
+    <button data-tab="stallning"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 21v-4"/><path d="M6 3h12v6a6 6 0 0 1-12 0V3z"/><path d="M6 5H3v2a4 4 0 0 0 3 3.87M18 5h3v2a4 4 0 0 1-3 3.87"/></svg>Ställning</button>
+    <button data-tab="banan"><svg viewBox="0 0 24 24"><path d="M6 21V4"/><path d="M6 4l9 3-9 3"/><circle cx="15" cy="19" r="2.2"/></svg>Banorna</button>
+    <button data-tab="info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>Info</button>
+    <button data-tab="admin"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Admin</button>
+  </div>
+</nav>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+/* =====================================================================
+   RINGWALL OPEN
+   Förmiddag: Västerås GK, 18 hål, bästboll Stableford
+   Eftermiddag: EnviLoopen (Skerike GK), 9 hål, scramble
+   ---------------------------------------------------------------------
+   STEG 1: Klistra in Firebase-konfigurationen (se README.md). Tom
+   konfiguration = lokalt läge (sparas bara i denna webbläsare).
+   Admin-lösenordet sätts/byts inne i appen under Admin.
+   ===================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCRSkud8MTdpCCjh6uHzSYOb6-6EOt-kcA",
+  authDomain: "ringwall-open.firebaseapp.com",
+  databaseURL: "https://ringwall-open-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ringwall-open",
+  appId: "1:161650064745:web:d27f95a34e752a53fd51f8"
+};
+const DB_ROOT = "ringwall2026";
+const APP_VERSION = "17";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
+
+/* ================= BANDATA =================
+   Västerås GK 18-hålsbanan, par 70. Hål (par/index) enligt klubbens
+   banguide; längder per tee [gul, blå, röd, orange] i meter.        */
+const VGK = {name:"Västerås GK", par:70, tees:["gul","bla","rod","orange"], holes:[
+ {n:1, par:4,idx:8, m:[320,320,260,235]},
+ {n:2, par:3,idx:18,m:[125,125,100,85]},
+ {n:3, par:4,idx:6, m:[345,310,310,260]},
+ {n:4, par:4,idx:4, m:[385,335,335,280]},
+ {n:5, par:5,idx:12,m:[470,385,385,345]},
+ {n:6, par:4,idx:14,m:[270,265,225,200]},
+ {n:7, par:3,idx:16,m:[150,150,140,140]},
+ {n:8, par:4,idx:2, m:[315,280,280,230]},
+ {n:9, par:3,idx:10,m:[155,155,140,140]},
+ {n:10,par:4,idx:13,m:[325,325,290,235]},
+ {n:11,par:5,idx:11,m:[475,475,385,340]},
+ {n:12,par:3,idx:3, m:[175,120,120,115]},
+ {n:13,par:4,idx:9, m:[370,320,320,265]},
+ {n:14,par:4,idx:15,m:[325,300,300,250]},
+ {n:15,par:4,idx:1, m:[385,340,340,280]},
+ {n:16,par:4,idx:17,m:[265,265,230,205]},
+ {n:17,par:4,idx:5, m:[350,305,305,260]},
+ {n:18,par:4,idx:7, m:[325,325,275,245]}
+]};
+/* TESTBANA — Sollentuna GK, par 72, gul tee (= klubbens Tee 59).
+   Aktiveras via Testläge under Admin. Hål enligt Caddee (ansluten,
+   årligen uppdaterad); CR/slope 71.8/128 är klubbens officiella. */
+const SOLL = {name:"Sollentuna GK (TEST)", par:72, rating:{cr:71.8,sl:128}, holes:[
+ {n:1, par:4,idx:7, m:[346]},
+ {n:2, par:3,idx:15,m:[147]},
+ {n:3, par:4,idx:5, m:[292]},
+ {n:4, par:4,idx:11,m:[354]},
+ {n:5, par:3,idx:13,m:[153]},
+ {n:6, par:5,idx:3, m:[470]},
+ {n:7, par:4,idx:9, m:[338]},
+ {n:8, par:4,idx:17,m:[342]},
+ {n:9, par:5,idx:1, m:[523]},
+ {n:10,par:5,idx:12,m:[487]},
+ {n:11,par:4,idx:4, m:[341]},
+ {n:12,par:5,idx:14,m:[434]},
+ {n:13,par:3,idx:16,m:[157]},
+ {n:14,par:4,idx:8, m:[334]},
+ {n:15,par:4,idx:6, m:[370]},
+ {n:16,par:4,idx:2, m:[383]},
+ {n:17,par:3,idx:18,m:[146]},
+ {n:18,par:4,idx:10,m:[300]}
+]};
+/* EnviLoopen (Skerike GK), par 31 över 9 hål. Längder [gul, röd].
+   Index enligt scorekortet (udda 1–17, banan spelas normalt 2 varv). */
+const ENVI = {name:"EnviLoopen", par:31, tees:["gul","rod"], holes:[
+ {n:1,par:3,idx:15,m:[125,100],tips:"Relativt snällt öppningshål, men greenen är liten — som alla på EnviLoopen."},
+ {n:2,par:4,idx:3, m:[300,240],tips:"Par 4 där långtslående kan nå greenhalsen. Diket kräver 180 meter carry — annars: lägg upp."},
+ {n:3,par:3,idx:7, m:[155,135],tips:"Längre par 3 som kräver full klubba in mot liten green."},
+ {n:4,par:4,idx:17,m:[235,200],tips:"Kort par 4 — banans lättaste enligt index. Position före kraft."},
+ {n:5,par:3,idx:1, m:[160,140],tips:"Banans svåraste hål enligt index. Lång par 3 där par är en riktigt bra score."},
+ {n:6,par:3,idx:11,m:[125,105],tips:"Kort par 3. Träffa green, gör din tvåputt, gå vidare nöjd."},
+ {n:7,par:3,idx:13,m:[120,120],tips:"Samma längd från båda tees. Rakt på — närspel avgör."},
+ {n:8,par:5,idx:5, m:[440,370],tips:"Banans enda par 5 och klart längsta hål. Tre kontrollerade slag ger birdiechans."},
+ {n:9,par:3,idx:9, m:[90,90],tips:"Bara 90 meter hem — men den lilla greenen förlåter inget slarv på sista hålet."}
+]};
+
+/* Förifyllda banvärden (CR/slope), gul tee — REDIGERBARA under Admin.
+   Alla spelare slår från gul tee och tävlingen är herrklass.
+   VGK: bästa tillgängliga uppgift (GolfPass), EJ verifierad mot klubben.
+   ENVI: klubbens officiella slopetabell (värderad 2021-06-16), angiven
+   för 2 varv (par 62) — appen räknar om till 9 hål.                 */
+const DEFAULT_RATINGS = {vgk:{cr:68.2,sl:121}, envi:{cr:59.1,sl:98}};
+/* djb2-hash för admin-lösenordet (klartexten står medvetet inte i koden). */
+const DEFAULT_PW_HASH = "h73bb36cf_12";
+const DEFAULT_SETTINGS = {
+  adminHash:null,
+  testmode:"0",
+  awards:{drive:"",narmast:""},
+  final:"0",
+  numTeams:"2",
+  bolltid1:"",bolltid2:"",bolltid3:"",
+  ratings:DEFAULT_RATINGS,
+  schema:"[tid] — Samling Västerås GK\n[tid] — Utslag: Bästboll Stableford 18 hål, Västerås GK (lagtävling)\n[tid] — Lunch & förflyttning till Skerike GK\n[tid] — Utslag: Scramble 2-mannalag 9 hål, EnviLoopen (lagtävling)\n[tid] — Prisutdelning\nSöndag — Frivilligt individuellt varv (inget pris)",
+  sidor:"Närmast hål — hål 2, Västerås GK (par 3, 125 m). Banans kortaste par 3, så alla i fältet når green och kampen om pinnen blir tät.\nLängsta drive — hål 5, Västerås GK (par 5, 470 m). Banans längsta hål med snällt index (12) — här vågar alla dra driver för fullt.\nBåda noteras under förmiddagspasset när alla spelar sin egen boll. Inga extra rundor.",
+  ovrigt:"Bekräfta din exakta hcp senast den 20 september så att lagdragning och scramble-hcp stämmer från start.\nRapportera gärna hålresultat löpande i chattgruppen.\nKörtid Västerås GK → Skerike GK är ca 15 minuter."
+};
+
+/* ---- Egna dialoger: iOS helskärmsläge blockerar systemets bekräftelserutor ---- */
+let _fragaResolve=null;
+function fraga(msg){
+  return new Promise(res=>{
+    _fragaResolve=res;
+    document.getElementById("modaltext").textContent=msg;
+    document.getElementById("modal").style.display="flex";
+  });
+}
+function fragaSvar(v){
+  document.getElementById("modal").style.display="none";
+  if(_fragaResolve){const r=_fragaResolve;_fragaResolve=null;r(v);}
+}
+let _toastT=null;
+function saga(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.style.display="block";
+  clearTimeout(_toastT);_toastT=setTimeout(()=>{t.style.display="none";},3500);
+}
+/* ================= STATE & LAGRING ================= */
+let S={players:{},morning:{},pairs:{},afternoon:{},locks:{fm:{},em:{}},settings:JSON.parse(JSON.stringify(DEFAULT_SETTINGS))};
+let db=null, usingFirebase=false;
+let ui={tab:"score",pass:"fm",unit:null};
+let ME=localStorage.getItem("ro_me")||null;
+function meName(){return ME&&S.players[ME]?S.players[ME].name:null;}
+function setMe(id){ME=id;if(id)localStorage.setItem("ro_me",id);else localStorage.removeItem("ro_me");}
+function isLocked(pass,unit){return !!((S.locks[pass==="fm"?"fm":"em"]||{})[unit]);}
+
+function pwHash(str){ let h=5381; for(let i=0;i<str.length;i++){h=((h<<5)+h+str.charCodeAt(i))>>>0;} return "h"+h.toString(16)+"_"+str.length; }
+function mergeRatings(base,over){
+  const out=JSON.parse(JSON.stringify(base));
+  if(!over)return out;
+  for(const c of ["vgk","envi"]){
+    const o=over[c];
+    if(o&&typeof o.cr==="number"&&typeof o.sl==="number"&&!isNaN(o.cr)&&!isNaN(o.sl))
+      out[c]={cr:Number(o.cr),sl:Number(o.sl)};
+  }
+  return out;
+}
+function normalize(raw){
+  raw=raw||{};
+  const st=Object.assign({},DEFAULT_SETTINGS,raw.settings||{});
+  st.ratings=mergeRatings(DEFAULT_RATINGS,(raw.settings||{}).ratings);
+  const lk=raw.locks||{};
+  return {players:raw.players||{},morning:raw.morning||{},pairs:raw.pairs||{},afternoon:raw.afternoon||{},locks:{fm:lk.fm||{},em:lk.em||{}},settings:st};
+}
+function initStorage(){
+  const dot=document.getElementById("syncdot");
+  if(FIREBASE_CONFIG&&FIREBASE_CONFIG.apiKey){
+    try{
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db=firebase.database(); usingFirebase=true;
+      db.ref(DB_ROOT).on("value",snap=>{S=normalize(snap.val());dot.className="syncdot on";render();},
+        err=>{dot.className="syncdot";console.error(err);});
+      db.ref(".info/connected").on("value",s=>{dot.className=s.val()?"syncdot on":"syncdot";});
+      return;
+    }catch(e){console.error("Firebase-init misslyckades:",e);}
+  }
+  usingFirebase=false;dot.className="syncdot local";dot.title="Lokalt läge — delas inte";
+  if(localStorage.getItem(DB_ROOT+"_v")!==APP_VERSION){   /* rensa inaktuell lokal cache */
+    localStorage.removeItem(DB_ROOT);
+    localStorage.setItem(DB_ROOT+"_v",APP_VERSION);
+  }
+  try{S=normalize(JSON.parse(localStorage.getItem(DB_ROOT)||"null"));}catch(e){S=normalize(null);}
+  window.addEventListener("storage",e=>{if(e.key===DB_ROOT){try{S=normalize(JSON.parse(e.newValue||"null"));}catch(_){}render();}});
+  render();
+}
+function dbSet(path,val){
+  if(usingFirebase){db.ref(DB_ROOT+"/"+path).set(val);}
+  else{
+    const parts=path.split("/");let o=S;
+    for(let i=0;i<parts.length-1;i++){if(typeof o[parts[i]]!=="object"||o[parts[i]]===null)o[parts[i]]={};o=o[parts[i]];}
+    if(val===null)delete o[parts[parts.length-1]];else o[parts[parts.length-1]]=val;
+    S=normalize(S);                       /* håll strukturen hel, t.ex. efter nollställning */
+    localStorage.setItem(DB_ROOT,JSON.stringify(S));render();
+  }
+}
+function dbUpdate(obj){
+  if(usingFirebase){const u={};for(const k in obj)u[DB_ROOT+"/"+k]=obj[k];firebase.database().ref().update(u);}
+  else{for(const k in obj)dbSet(k,obj[k]);}
+}
+
+/* ================= GOLFMATEMATIK =================
+   Spelhcp 18 hål (VGK):  exakt hcp × slope/113 + (CR − par), avrundat.
+   Spelhcp 9 hål (ENVI):  (exakt hcp / 2) × slope/113 + (CR9 − par9),
+   där CR9 = klubbens 2-varvs-CR / 2 och par9 = 31. (SGF/WHS 9-hål.)  */
+function fmCourse(){return S.settings.testmode==="1"?SOLL:VGK;}
+function spelhcpFm(p){
+  if(p.hcp===""||p.hcp==null)return null;
+  const C=fmCourse();
+  const r=C.rating||S.settings.ratings.vgk;
+  return Math.round(Number(p.hcp)*r.sl/113+(r.cr-C.par));
+}
+function spelhcpEm(p){
+  if(p.hcp===""||p.hcp==null)return null;
+  const r=S.settings.ratings.envi;
+  return Math.round((Number(p.hcp)/2)*r.sl/113+(r.cr/2-ENVI.par));
+}
+/* Slag på ett hål givet spelhcp s, hålets index (1..n) och n hål.
+   Plushandicap (s<0) ger tillbaka slag på de lättaste hålen.        */
+function shotsOnHole(s,index,n){
+  if(s===null)return 0;
+  if(s>=0)return Math.floor(s/n)+(index<=(s%n)?1:0);
+  const give=-s;
+  return -(Math.floor(give/n)+(index>n-(give%n)?1:0));
+}
+function stablefordPts(gross,par,shots){
+  if(gross===undefined||gross===null||gross==="")return null;
+  const g=Number(gross);
+  if(g===0)return 0;                      /* streck / plockat upp */
+  return Math.max(0,par+shots-g+2);
+}
+function playerMorningPts(pid){
+  const p=S.players[pid];if(!p)return{holes:Array(18).fill(null),sum:0,done:0};
+  const s=spelhcpFm(p),row=S.morning[pid]||{};
+  const holes=fmCourse().holes.map(h=>stablefordPts(row["h"+h.n],h.par,shotsOnHole(s,h.idx,18)));
+  return{holes,sum:holes.reduce((a,b)=>a+(b||0),0),done:holes.filter(x=>x!==null).length};
+}
+function teamMorning(team){
+  const ids=Object.keys(S.players).filter(id=>S.players[id].team===team);
+  const per=ids.map(id=>playerMorningPts(id));
+  const holes=fmCourse().holes.map((h,i)=>{
+    const v=per.map(x=>x.holes[i]).filter(x=>x!==null);
+    return v.length?Math.max(...v):null;
+  });
+  return{holes,sum:holes.reduce((a,b)=>a+(b||0),0)};
+}
+/* EnviLoopens index (15,3,7,17,1,11,13,5,9) omrankas 1–9 för slagfördelning */
+const ENVI_RANKED=(()=>{const sorted=[...ENVI.holes].sort((a,b)=>a.idx-b.idx);const r={};sorted.forEach((h,i)=>r[h.n]=i+1);return ENVI.holes.map(h=>({...h,rank9:r[h.n]}));})();
+function pairMembers(pair){
+  return [pair.p1,pair.p2,pair.p3].filter(id=>id&&S.players[id]).map(id=>S.players[id]);
+}
+function pairHcp(pair){
+  const mem=pairMembers(pair);
+  if(mem.length<2)return null;
+  const s=mem.map(spelhcpEm);
+  if(s.some(x=>x===null))return null;
+  s.sort((a,b)=>a-b);                    /* spelhcp är redan för 9 hål */
+  if(mem.length===2)return Math.round(0.35*s[0]+0.15*s[1]);
+  return Math.round(0.20*s[0]+0.15*s[1]+0.10*s[2]);   /* trio: 20/15/10 */
+}
+function pairPts(pairId){
+  const pair=S.pairs[pairId];if(!pair)return{holes:[],sum:0,done:0,hcp:null};
+  const c=pairHcp(pair),row=S.afternoon[pairId]||{};
+  const holes=ENVI_RANKED.map(h=>stablefordPts(row["h"+h.n],h.par,shotsOnHole(c,h.rank9,9)));
+  return{holes,sum:holes.reduce((a,b)=>a+(b||0),0),done:holes.filter(x=>x!==null).length,hcp:c};
+}
+function pairTeam(pairId){const pr=S.pairs[pairId];if(!pr)return null;const p1=S.players[pr.p1];return p1?p1.team:null;}
+function tiebreak(team){
+  const holes=teamMorning(team).holes;
+  const last=n=>holes.slice(18-n).reduce((a,b)=>a+(b||0),0);
+  return{n9:last(9),n6:last(6),n3:last(3),n1:last(1)};
+}
+
+/* ================= RENDERING ================= */
+const $=s=>document.querySelector(s);
+function esc(t){return String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function render(){renderScore();renderStallning();renderHighlights();renderAch();renderBanan();renderInfo();renderAdmin();}
+
+/* ---- Score ---- */
+function renderScore(){
+  $("#score-setupnotis").innerHTML=(S.settings.testmode==="1"?`<div class="notis"><b>TESTLÄGE.</b> Förmiddagsbanan är tillfälligt Sollentuna GK för att testa appen. Tävlingsledningen växlar tillbaka till Västerås GK under Admin.</div>`:"")+(usingFirebase?"":
+    `<div class="notis"><b>Lokalt läge.</b> Ingen Firebase-konfiguration hittades, så scores sparas bara i den här webbläsaren och delas inte live. Följ stegen i <code>README.md</code> för att aktivera delad live-score.</div>`);
+  const bollar=computeBolls();
+  $("#startlista").innerHTML=(ui.pass==="fm"&&bollar.length)?
+    `<div class="panel" style="padding:10px 14px">${bollar.map(g=>{
+      const tid=S.settings["bolltid"+g.nr]||"";
+      return `<div style="font-size:.82rem;padding:4px 0"><b class="mono" style="color:${TEAMFARG[g.lag]}">Boll ${g.nr}${tid?" · "+esc(tid):""}</b> — Lag ${g.lag}: ${g.ids.map(i=>esc(S.players[i].name)).join(", ")}</div>`;}).join("")}</div>`:"";
+  $("#passval").innerHTML=
+    `<button class="chip ${ui.pass==='fm'?'act':''}" onclick="setPass('fm')">FM · Bästboll · ${fmCourse().name}</button>
+     <button class="chip ${ui.pass==='em'?'act':''}" onclick="setPass('em')">EM · Scramble · EnviLoopen</button>`;
+  document.getElementById("vemrad").innerHTML = meName()
+    ? `Den här telefonen: <b>${esc(meName())}</b> <button class="chip" style="padding:3px 10px;font-size:.72rem;margin-left:4px" onclick="bytPerson()">byt person</button><br>Föra score åt någon annan utan att byta? Tryck bara på namnet nedan och bekräfta i rutan.`
+    : `Välj dig själv nedan så minns telefonen vem du är.`;
+  const ev=$("#enhetsval");
+  if(ui.pass==="fm"){
+    const ids=Object.keys(S.players);
+    ev.innerHTML=ids.map(id=>{const p=S.players[id];
+      return `<button class="chip team${p.team||''} ${ui.unit===id?'act':''}" onclick="setUnit('${id}')">${esc(p.name)}</button>`;}).join("");
+    if(!ids.length){$("#scoregrid").innerHTML=`<div class="tomt">Inga spelare ännu.<br>Tävlingsledningen lägger till alla tolv under <b>Admin</b>.</div>`;return;}
+  }else{
+    const ids=Object.keys(S.pairs);
+    ev.innerHTML=ids.map(id=>`<button class="chip team${pairTeam(id)||''} ${ui.unit===id?'act':''}" onclick="setUnit('${id}')">${esc(pairName(id))}</button>`).join("");
+    if(!ids.length){$("#scoregrid").innerHTML=`<div class="tomt">Inga scramble-par ännu.<br>Tävlingsledningen skapar dem under <b>Admin</b>.</div>`;return;}
+  }
+  if(ui.unit&&((ui.pass==="fm"&&!S.players[ui.unit])||(ui.pass==="em"&&!S.pairs[ui.unit])))ui.unit=null;
+  if(!ui.unit){$("#scoregrid").innerHTML=`<div class="tomt">Välj ${ui.pass==='fm'?'spelare':'par'} ovan för att föra score.</div>`;return;}
+  if(ui.pass==="fm")renderGridFM(ui.unit);else renderGridEM(ui.unit);
+}
+function pairName(id){const pr=S.pairs[id];if(!pr)return"?";
+  const n=[pr.p1,pr.p2,pr.p3].filter(Boolean).map(x=>S.players[x]?S.players[x].name:"?");
+  return n.length?n.join(" & "):"?";}
+function setPass(p){ui.pass=p;ui.unit=null;render();}
+function bytPerson(){
+  setMe(null);ui.unit=null;render();
+  saga("Identiteten är rensad — tryck på ditt namn i listan så minns telefonen dig i stället.");
+}
+async function setUnit(u){
+  if(ME&&!S.players[ME])setMe(null);                      /* borttagen spelare */
+  if(ui.pass==="fm"){
+    const p=S.players[u];
+    if(!ME){
+      if(await fraga(`Är du ${p.name}? Då öppnas din score direkt på den här telefonen framöver.\n\nOK = ja, det är jag.\nAvbryt = nej, jag för bara score åt ${p.name}.`))setMe(u);
+    }else if(u!==ME){
+      if(!await fraga(`Du är ${meName()}. Vill du verkligen öppna och ändra ${p.name}s score?`))return;
+    }
+  }else if(ME){
+    const pr=S.pairs[u];
+    if(pr&&pr.p1!==ME&&pr.p2!==ME){
+      if(!await fraga(`Du är ${meName()} och det här är inte ditt par. Öppna och ändra ${pairName(u)}s score ändå?`))return;
+    }
+  }
+  ui.unit=u;render();
+}
+function renderGridFM(pid){
+  const p=S.players[pid],s=spelhcpFm(p),row=S.morning[pid]||{},res=playerMorningPts(pid);
+  const locked=isLocked("fm",pid);
+  let html=`<div class="holemeta" style="margin-bottom:8px">${esc(p.name)} · ${fmCourse().name}, gul tee · Exakt hcp <b>${esc(p.hcp)}</b> → spelhcp <b>${s===null?"?":s}</b></div>`;
+  if(locked)html+=`<div class="notis"><b>Inlämnad ✓</b> Ronden är låst. Hittat en typo? Be tävlingsledningen låsa upp under Admin.</div>`;
+  fmCourse().holes.forEach((h,i)=>{html+=holeRow("fm",pid,h.n,h.par,h.idx,shotsOnHole(s,h.idx,18),row["h"+h.n],res.holes[i],locked);});
+  html+=`<div class="sumrow"><span>Summa Stableford</span><span class="tot">${res.sum} p</span></div>`;
+  if(!locked&&res.done===18)html+=`<div style="margin-top:10px"><button class="btn" onclick="lamnaIn('fm','${pid}')">Lämna in ronden</button></div>`;
+  if(!locked)html+=`<p class="hint" style="margin-top:8px">Minus under 1 sätter streck (–) = plockat upp, 0 poäng. När alla 18 hål är ifyllda kan ronden lämnas in och låses då för ändringar.</p>`;
+  $("#scoregrid").innerHTML=html;
+}
+function renderGridEM(pairId){
+  const res=pairPts(pairId),row=S.afternoon[pairId]||{};
+  const locked=isLocked("em",pairId);
+  let html=`<div class="holemeta" style="margin-bottom:8px">${esc(pairName(pairId))} · EnviLoopen, gul tee · Scramble-hcp <b>${res.hcp===null?"?":res.hcp}</b> (35 % lägre + 15 % högre 9-håls-spelhcp)</div>`;
+  if(locked)html+=`<div class="notis"><b>Inlämnad ✓</b> Ronden är låst. Hittat en typo? Be tävlingsledningen låsa upp under Admin.</div>`;
+  ENVI_RANKED.forEach((h,i)=>{html+=holeRow("em",pairId,h.n,h.par,h.idx,shotsOnHole(res.hcp,h.rank9,9),row["h"+h.n],res.holes[i],locked);});
+  html+=`<div class="sumrow"><span>Summa Stableford</span><span class="tot">${res.sum} p</span></div>`;
+  if(!locked&&res.done===9)html+=`<div style="margin-top:10px"><button class="btn" onclick="lamnaIn('em','${pairId}')">Lämna in ronden</button></div>`;
+  $("#scoregrid").innerHTML=html;
+}
+function holeRow(pass,unit,holeNo,par,idx,shots,val,pts,locked){
+  const dots=shots>0?"●".repeat(Math.min(shots,4)):(shots<0?"−".repeat(-shots):"");
+  const shown=(val===undefined||val===null||val==="")?"·":(Number(val)===0?"–":val);
+  const tom=shown==="·";
+  const ptsTxt=pts===null?"":pts+"p";
+  const ptsCls=pts===null?"":(pts>=3?"bra":(pts===0?"noll":""));
+  return `<div class="holerow">
+    <div class="holenr">${holeNo}</div>
+    <div class="holemeta">Par <b>${par}</b> · Index ${idx}${pass==="fm"&&S.settings.testmode!=="1"&&SIDE_FM[holeNo]?` · <span style="color:var(--score)">${SIDE_FM[holeNo]}</span>`:""}<br><span class="slagdots">${dots}</span></div>
+    <div class="stepper">
+      <button aria-label="Minska" ${locked?"disabled style='opacity:.3'":""} onclick="bump('${pass}','${unit}',${holeNo},-1)">−</button>
+      <span class="val ${tom?'tom':''}">${shown}</span>
+      <button aria-label="Öka" ${locked?"disabled style='opacity:.3'":""} onclick="bump('${pass}','${unit}',${holeNo},1)">+</button>
+    </div>
+    <div class="ptsbadge ${ptsCls}">${ptsTxt}</div>
+  </div>`;
+}
+async function lamnaIn(pass,unit){
+  if(S.settings.final==="1"){saga("Tävlingen är avslutad.");return;}
+  const namn=pass==="fm"?(S.players[unit]||{}).name:pairName(unit);
+  if(!await fraga(`Lämna in ${namn}s rond? Scoren låses och kan bara låsas upp av tävlingsledningen.`))return;
+  dbSet(`locks/${pass}/${unit}`,true);
+}
+function bump(pass,unit,holeNo,d){
+  if(S.settings.final==="1"){saga("Tävlingen är avslutad och resultatet fastställt. Tävlingsledningen kan återöppna under Admin.");return;}
+  if(isLocked(pass,unit)){saga("Ronden är inlämnad och låst. Be tävlingsledningen låsa upp om något behöver rättas.");return;}
+  const branch=pass==="fm"?"morning":"afternoon";
+  const course=pass==="fm"?fmCourse():ENVI;
+  const cur=((S[branch][unit]||{})["h"+holeNo]);
+  let next;
+  if(cur===undefined||cur===null||cur===""){next=d>0?(course.holes.find(x=>x.n===holeNo)||{par:4}).par:null;}
+  else{next=Number(cur)+d;if(next<0)next=null;}
+  dbSet(`${branch}/${unit}/h${holeNo}`,next===null?null:next);
+}
+
+/* ---- Ställning ---- */
+function emData(){
+  const teams=TEAMS();
+  const parAntal=teams.map(t=>Object.keys(S.pairs).filter(id=>pairTeam(id)===t).length);
+  const allaHarPar=parAntal.every(n=>n>0);
+  const K=allaHarPar?Math.min(...parAntal):null;
+  const kAktiv=!!(allaHarPar&&new Set(parAntal).size>1);
+  const per={};
+  teams.forEach(t=>{
+    const sums=Object.keys(S.pairs).filter(id=>pairTeam(id)===t).map(id=>pairPts(id).sum).sort((a,b)=>b-a);
+    per[t]=(kAktiv?sums.slice(0,K):sums).reduce((a,b)=>a+b,0);
+  });
+  return {per,K,kAktiv};
+}
+function standings(){
+  const em=emData();
+  const data=TEAMS().map(t=>{
+    const fm=teamMorning(t);
+    const d={t,fmSum:fm.sum,fmHoles:fm.holes,emSum:em.per[t],tb:tiebreak(t)};
+    d.tot=d.fmSum+d.emSum;return d;
+  });
+  const ranked=[...data].sort((a,b)=>b.tot-a.tot||b.tb.n9-a.tb.n9||b.tb.n6-a.tb.n6||b.tb.n3-a.tb.n3||b.tb.n1-a.tb.n1);
+  return {data,ranked,em};
+}
+function statusText(ranked){
+  const fin=S.settings.final==="1";
+  const L=ranked[0],R=ranked[1];
+  if(L.tot!==R.tot)
+    return fin?`🏆 Slutresultat: Lag ${L.t} vinner Ringwall Open, ${L.tot}–${R.tot}`
+              :`Lag ${L.t} leder med ${L.tot-R.tot} poäng`;
+  if(L.tot===0&&!fin)return "Lika just nu";
+  const steg=[["n9","sista 9"],["n6","sista 6"],["n3","sista 3"],["n1","sista hålet"]];
+  for(const [k,namn] of steg){
+    if(L.tb[k]!==R.tb[k])
+      return fin?`🏆 Slutresultat: Lag ${L.t} vinner på särskiljning (${namn}), ${L.tot}–${R.tot}`
+                :`Lika i topp — Lag ${L.t} före på ${namn} (${L.tb[k]}–${R.tb[k]})`;
+  }
+  return fin?`🏆 Slutresultat: helt delad seger, ${L.tot}–${R.tot}`:"Helt lika — även i särskiljningen";
+}
+function renderStallning(){
+  document.getElementById("fm-rubrik").textContent="Förmiddag — Bästboll, "+fmCourse().name+" (18 hål)";
+  const teams=TEAMS();
+  const st=standings();
+  const status=statusText(st.ranked);
+  if(teams.length===2){
+    const A=st.data[0],B=st.data[1];
+    const tot=A.tot+B.tot||1;
+    $("#tavlan").innerHTML=`<div class="board">
+      <div class="versus">
+        <div class="side a"><div class="lagnamn">Lag A</div><div class="pts">${A.tot}</div><div class="holemeta">FM ${A.fmSum} · EM ${A.emSum}</div></div>
+        <div class="mid">VS</div>
+        <div class="side b"><div class="lagnamn">Lag B</div><div class="pts">${B.tot}</div><div class="holemeta">FM ${B.fmSum} · EM ${B.emSum}</div></div>
+      </div>
+      <div class="leaderbar"><div class="ba" style="width:${100*A.tot/tot}%"></div><div class="bb" style="width:${100*B.tot/tot}%"></div></div>
+      <div class="status">${status}</div>
+    </div>`;
+  }else{
+    $("#tavlan").innerHTML=`<div class="board">${st.ranked.map((d,i)=>
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:13px 14px;border-bottom:1px solid var(--linje)">
+        <span><b class="mono" style="color:${TEAMFARG[d.t]}">${i+1}. Lag ${d.t}</b> <span class="holemeta" style="margin-left:8px">FM ${d.fmSum} · EM ${d.emSum}</span></span>
+        <span class="mono" style="font-size:1.35rem;color:${TEAMFARG[d.t]}">${d.tot}</span>
+      </div>`).join("")}<div class="status">${status}</div></div>`;
+  }
+  /* FM: Ut/In-scorekort, en rad per lag */
+  const fmTab=(from,to,rubrik)=>{
+    const hs=fmCourse().holes.slice(from,to);
+    return `<table class="res" style="margin-bottom:10px"><tr><th>${rubrik}</th>${hs.map(x=>`<th style="text-align:center">${x.n}</th>`).join("")}<th style="text-align:right">Σ</th></tr>`+
+      st.data.map(d=>{
+        const seg=d.fmHoles.slice(from,to);
+        return `<tr><td><span class="tag${d.t}">${d.t}</span></td>${seg.map(v=>`<td class="num" style="text-align:center;padding:8px 3px">${v===null?"·":v}</td>`).join("")}<td class="num"><b>${seg.reduce((a,b)=>a+(b||0),0)}</b></td></tr>`;
+      }).join("")+"</table>";
+  };
+  const fm=fmTab(0,9,"Ut")+fmTab(9,18,"In")+
+    `<div style="display:flex;justify-content:flex-end;gap:14px;font-size:.85rem;padding:2px 6px">${st.data.map(d=>`<span>Lag ${d.t}: <b class="mono" style="color:${TEAMFARG[d.t]}">${d.fmSum}</b></span>`).join("")}</div>`;
+  $("#res-fm").innerHTML=Object.keys(S.players).length?fm:`<div class="tomt">Väntar på spelare.</div>`;
+  /* EM: par + K-regelnotis */
+  const pairIds=Object.keys(S.pairs);
+  if(pairIds.length){
+    let em=st.em.kAktiv?`<p class="hint" style="margin-top:0">Lagen har olika många par — de <b>${st.em.K} bästa paren</b> per lag räknas i lagsumman, för rättvis jämförelse.</p>`:"";
+    em+=`<table class="res"><tr><th>Par</th><th>Lag</th><th style="text-align:right">Hcp</th><th style="text-align:right">Hål</th><th style="text-align:right">Poäng</th></tr>`;
+    pairIds.map(id=>({id,r:pairPts(id)})).sort((a,b)=>b.r.sum-a.r.sum).forEach(x=>{
+      const t=pairTeam(x.id);
+      em+=`<tr><td>${esc(pairName(x.id))}</td><td>${t?`<span class="tag${t}">${t}</span>`:"?"}</td><td class="num">${x.r.hcp===null?"?":x.r.hcp}</td><td class="num">${isLocked("em",x.id)?"✓":x.r.done+"/9"}</td><td class="num"><b>${x.r.sum}</b></td></tr>`;});
+    $("#res-em").innerHTML=em+"</table>";
+  }else $("#res-em").innerHTML=`<div class="tomt">Inga par skapade ännu.</div>`;
+  /* Individuellt */
+  const ids=Object.keys(S.players);
+  if(ids.length){
+    let ind=`<table class="res"><tr><th>#</th><th>Spelare</th><th>Lag</th><th style="text-align:right">Hål</th><th style="text-align:right">Poäng</th></tr>`;
+    ids.map(id=>({id,p:S.players[id],r:playerMorningPts(id)})).sort((a,b)=>b.r.sum-a.r.sum).forEach((x,i)=>{
+      ind+=`<tr><td class="num">${i+1}</td><td>${esc(x.p.name)}</td><td>${x.p.team?`<span class="tag${x.p.team}">${x.p.team}</span>`:"?"}</td><td class="num">${isLocked("fm",x.id)?"✓":x.r.done+"/18"}</td><td class="num"><b>${x.r.sum}</b></td></tr>`;});
+    $("#res-ind").innerHTML=ind+"</table>";
+  }else $("#res-ind").innerHTML=`<div class="tomt">Väntar på spelare.</div>`;
+}
+
+const SIDE_FM={2:"📍 Närmast hål",5:"📏 Längsta drive"};
+function TEAMS(){return ["A","B","C","D"].slice(0,Math.max(2,Math.min(4,Number(S.settings.numTeams||"2"))));}
+const TEAMFARG={A:"var(--score)",B:"#FF7A64",C:"#7FA8E8",D:"#E5A05A"};
+/* Bollarna bildas av lagen: man spelar med sitt lag, max 4 per boll,
+   större lag delas så jämnt som möjligt (6 -> 3+3, 5 -> 3+2). */
+function computeBolls(){
+  const out=[];
+  TEAMS().forEach(t=>{
+    const ids=Object.keys(S.players).filter(id=>S.players[id].team===t);
+    if(!ids.length)return;
+    const n=Math.ceil(ids.length/4), per=Math.ceil(ids.length/n);
+    for(let i=0;i<n;i++){
+      const del=ids.slice(i*per,(i+1)*per);
+      if(del.length)out.push({lag:t,nr:out.length+1,del:n>1?i+1:0,ids:del});
+    }
+  });
+  return out;
+}
+/* ---- Utmärkelser ----
+   Allt utom sidotävlingarna härleds automatiskt ur inmatade bruttoslag.
+   Birdie/eagle/HIO räknas på BRUTTO — riktiga fåglar bara.            */
+const ACH_DEF=[
+ ["hio","👑","Hole-in-one"],
+ ["eagle","🦅","Eagle (brutto)"],
+ ["birdie","🐦","Fågelskådaren — birdie (brutto)"],
+ ["form","📈","Bättre än sitt hcp — 36+ poäng på ronden"],
+ ["skog","🌲","Ingen boll i skogen — full rond utan streck"],
+ ["metro","⛳","Metronomen — 3 hål i rad på par eller bättre"],
+ ["come","🔥","Comebacken — bättre in- än utnio"],
+ ["drive","📏","Längsta drive (hål 5, VGK)"],
+ ["narmast","📍","Närmast hål (hål 2, VGK)"]
+];
+function computeAch(){
+  const res={};
+  const add=(k,who)=>{res[k]=res[k]||{};res[k][who]=(res[k][who]||0)+1;};
+  const C=fmCourse();
+  for(const pid in S.players){
+    const p=S.players[pid],row=S.morning[pid]||{};
+    let streak=0,best=0,anyStreck=false;
+    C.holes.forEach(hh=>{
+      const g=row["h"+hh.n];
+      if(g===undefined||g===null||g===""){streak=0;return;}
+      const gn=Number(g);
+      if(gn===0){anyStreck=true;streak=0;return;}
+      if(gn===1)add("hio",p.name);
+      else if(gn<=hh.par-2)add("eagle",p.name);
+      else if(gn===hh.par-1)add("birdie",p.name);
+      if(gn<=hh.par){streak++;best=Math.max(best,streak);}else streak=0;
+    });
+    const r=playerMorningPts(pid);
+    if(r.done===18&&r.sum>=36)add("form",p.name);
+    if(r.done===18&&!anyStreck)add("skog",p.name);
+    if(best>=3)add("metro",p.name);
+    if(r.done===18){
+      const ut=r.holes.slice(0,9).reduce((a,b)=>a+(b||0),0);
+      const inn=r.holes.slice(9).reduce((a,b)=>a+(b||0),0);
+      if(inn>ut)add("come",p.name);
+    }
+  }
+  for(const id in S.pairs){
+    const row=S.afternoon[id]||{};
+    ENVI.holes.forEach(hh=>{
+      const g=row["h"+hh.n];if(g===undefined||g===null||g==="")return;
+      const gn=Number(g);if(gn===0)return;
+      if(gn===1)add("hio",pairName(id));
+      else if(gn<=hh.par-2)add("eagle",pairName(id));
+      else if(gn===hh.par-1)add("birdie",pairName(id));
+    });
+  }
+  $("#set-numteams").value=String(TEAMS().length);
+  if(!document.activeElement.closest||!document.activeElement.closest("#bolltider")){
+    const bollar=computeBolls();
+    $("#bolltider").innerHTML=bollar.length?bollar.map(g=>
+      `<label class="fld">Boll ${g.nr} — Lag ${g.lag}${g.del?" (${g.del})".replace("${g.del}",g.del):""}: ${g.ids.map(i=>esc(S.players[i].name||"?")).join(", ")}</label>
+       <input type="text" placeholder="Starttid, t.ex. 09:00" value="${esc(S.settings["bolltid"+g.nr]||"")}" onchange="dbSet('settings/bolltid${g.nr}',this.value)">`).join("")
+      :`<div class="tomt" style="padding:12px">Bollarna dyker upp här när spelarna fått lag.</div>`;
+  }
+  const fbtn=document.getElementById("btn-final");
+  if(S.settings.final==="1"){fbtn.textContent="Återöppna tävlingen";fbtn.className="btn fara";}
+  else{fbtn.textContent="Avsluta tävlingen 🏆";fbtn.className="btn ghost";}
+  const aw=S.settings.awards||{};
+  if(aw.drive&&S.players[aw.drive])add("drive",S.players[aw.drive].name);
+  if(aw.narmast&&S.players[aw.narmast])add("narmast",S.players[aw.narmast].name);
+  return res;
+}
+function computeHighlights(){
+  const out=[],C=fmCourse();
+  for(const pid in S.players){const row=S.morning[pid]||{};
+    C.holes.forEach(hh=>{const g=row["h"+hh.n];if(g===undefined||g===null||g==="")return;
+      const gn=Number(g);if(gn>0&&gn<=hh.par-1)out.push({h:hh.n,ic:gn===1?"👑":(gn<=hh.par-2?"🦅":"🐦"),namn:S.players[pid].name,pass:"FM"});});}
+  for(const id in S.pairs){const row=S.afternoon[id]||{};
+    ENVI.holes.forEach(hh=>{const g=row["h"+hh.n];if(g===undefined||g===null||g==="")return;
+      const gn=Number(g);if(gn>0&&gn<=hh.par-1)out.push({h:hh.n,ic:gn===1?"👑":(gn<=hh.par-2?"🦅":"🐦"),namn:pairName(id),pass:"EM"});});}
+  out.sort((a,b)=>(a.pass===b.pass)?b.h-a.h:(a.pass==="EM"?-1:1));
+  return out;
+}
+function renderHighlights(){
+  const hl=computeHighlights();
+  $("#hojdpunkter").innerHTML=hl.length?
+    `<div class="panel" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px">${hl.slice(0,12).map(x=>
+      `<span style="font-size:.78rem;border:1px solid var(--linje);border-radius:999px;padding:4px 10px;white-space:nowrap">${x.ic} ${esc(x.namn)} · ${x.pass} hål ${x.h}</span>`).join("")}${hl.length>12?`<span style="font-size:.78rem;color:var(--sand);padding:4px 4px">+${hl.length-12} till</span>`:""}</div>`:"";
+}
+function renderAch(){
+  const res=computeAch();
+  const rows=ACH_DEF.filter(([k])=>res[k]).map(([k,ic,namn])=>{
+    const who=Object.entries(res[k]).map(([n,c])=>esc(n)+(c>1?` ×${c}`:"")).join(", ");
+    return `<div style="display:flex;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--linje)">
+      <span style="font-size:1.25rem">${ic}</span>
+      <div style="font-size:.85rem;line-height:1.45"><b>${namn.split(" — ")[0]}</b>${namn.includes(" — ")?`<span style="color:var(--sand)"> — ${namn.split(" — ")[1]}</span>`:""}<br>${who}</div>
+    </div>`;
+  }).join("");
+  $("#res-ach").innerHTML=rows||`<div class="tomt">Inga utmärkelser ännu — första birdien 🐦 väntar därute.</div>`;
+}
+/* ---- Banorna ---- */
+function renderBanan(){
+  const test=S.settings.testmode==="1";
+  $("#ban-fm-rubrik").textContent="Förmiddag — "+fmCourse().name;
+  $("#ban-fm-text").innerHTML=test
+    ?`TESTLÄGE. Par 72. Medelsvår parkbana i Sollentuna, gul tee (Tee 59), CR/slope 71.8/128 enligt klubben. <a href="https://sollentunagk.se/banguide/" target="_blank" rel="noopener">Klubbens banguide</a>.`
+    :`Par 70. Park- och skogsbana vid Svartån i Bjärby, mitt i Västerås — små, upphöjda greener omgivna av bunkrar gör inspelen till nyckeln. Längder i meter. Illustrationer och hålbilder finns i <a href="https://vasterasgk.se/spela-golf-pa-vgk/banguide/" target="_blank" rel="noopener">klubbens banguide</a>.`;
+  $("#banlista-vgk").innerHTML=fmCourse().holes.map(h=>`<div class="holecard">
+    <div class="top"><span class="nr">${h.n}</span><span class="parline">Par ${h.par} · Index ${h.idx}${!test&&SIDE_FM[h.n]?` · <span style="color:var(--score)">${SIDE_FM[h.n]}</span>`:""}</span></div>
+    <div class="teebar"><span class="tee gul"><i></i>Gul ${h.m[0]} m</span></div>
+  </div>`).join("");
+  $("#banlista-envi").innerHTML=ENVI.holes.map(h=>`<div class="holecard">
+    <div class="top"><span class="nr">${h.n}</span><span class="parline">Par ${h.par} · Index ${h.idx}</span></div>
+    <div class="teebar"><span class="tee gul"><i></i>Gul ${h.m[0]} m</span></div>
+    ${h.tips?`<div class="tips">${esc(h.tips)}</div>`:""}
+  </div>`).join("");
+}
+
+/* ---- Info ---- */
+function renderInfo(){
+  const st=S.settings,R=st.ratings;
+  const faq=(q,a)=>`<details class="faq"><summary>${q}</summary><div class="inner">${a}</div></details>`;
+  const schemaHtml=`<table class="schema">${esc(st.schema).split("\n").filter(Boolean).map(l=>{
+    const m=l.split(" — ");return m.length>1?`<tr><td>${m[0]}</td><td>${m.slice(1).join(" — ")}</td></tr>`:`<tr><td></td><td>${l}</td></tr>`;}).join("")}</table>`;
+  $("#infolista").innerHTML=
+    faq("Schema & hålltider",schemaHtml)+
+    faq("Hur funkar lagtävlingen?",
+      `<b>Förmiddag — Bästboll Stableford, 18 hål på Västerås GK.</b>\nAlla spelar sin egen boll med fullt spelhandicap. På varje hål räknas lagets högsta Stableford-poäng som lagets poäng.\n\n<b>Eftermiddag — Scramble, 9 hål på EnviLoopen (Skerike GK).</b>\nLag om två eller tre: alla slår ut, ni väljer bästa bollen, alla spelar därifrån — hela vägen i hål. Handicap efter lagstorlek: par = 35 % av det lägre + 15 % av det högre; trio = 20 % + 15 % + 10 % av lägsta/mellersta/högsta 9-håls-spelhandicap. Vid udda lagstorlek bildas en trio så att ingen står utanför. Poängbogey även här.\n\n<b>Totalt:</b> förmiddag + eftermiddag. Flest poäng vinner.\n\n<b>Vid lika:</b> bäst på sista 9 hålen av förmiddagens bästboll, sedan sista 6, sista 3, sista hålet. Appen räknar detta automatiskt.`)+
+    faq("Sidotävlingar",esc(st.sidor))+
+    faq("Hur för jag score?",
+      `Gå till <b>Score</b>, välj pass och dig själv (eller ert par på eftermiddagen), och stega in antal <b>bruttoslag</b> per hål. Appen räknar om till Stableford med rätt spelhandicap för rätt bana.\n\nPlockat upp bollen? Tryck minus tills det står <b>–</b> (streck) så registreras 0 poäng.\n\nPrickarna under par/index visar hur många slag du får på hålet.`)+
+    faq("Spelhandicap & slope",
+      `Alla spelar från gul tee (herrklass). Spelhcp räknas per bana enligt WHS: exakt hcp × slope/113 + (CR − par), avrundat.\n\n<b>Västerås GK</b> — par 70, gul tee ${R.vgk.cr.toFixed(1)}/${R.vgk.sl}. Fullt spelhandicap på förmiddagens 18 hål.\n\n<b>EnviLoopen</b> — par 31. För 9-hålsrundan används halva exakta handicappet mot banans 9-hålsvärden (klubbens tabell ${R.envi.cr.toFixed(1)}/${R.envi.sl} gäller 2 varv; appen halverar CR:t åt dig).\n\nExakt hcp anmäls senast <b>den 20 september</b>.`)+
+    faq("Söndagen",
+      `Frivilligt extravarv, 18 hål, valfritt format. Räknas inte till lagtävlingen och inget pris delas ut — bara för den som orkar och vill spela mer.`)+
+    faq("Praktiskt",esc(st.ovrigt)+
+      `\n\n<b>Västerås GK</b> · Bjärby, Västerås · 021-448 47 00 · <a href="https://vasterasgk.se/spela-golf-pa-vgk/banguide/" target="_blank" rel="noopener">Banguide</a> · <a href="https://vasterasgk.se/spela-golf-pa-vgk/slope-lokala-regler/lokala-regler/" target="_blank" rel="noopener">Lokala regler</a>\n<b>Skerike GK / EnviLoopen</b> · Svartådalen · 021-510 80 · <a href="https://skerikegk.se/spela/9-halsbanan/" target="_blank" rel="noopener">Banguide</a> · <a href="https://skerikegk.se/wp-content/uploads/2026/04/lokala-regler-2026-skerikegk.pdf" target="_blank" rel="noopener">Lokala regler (PDF)</a>`);
+}
+
+/* ---- Admin ---- */
+let adminOpen = sessionStorage.getItem("ro_admin")==="1";
+function currentHash(){return S.settings.adminHash||DEFAULT_PW_HASH;}
+function renderAdmin(){
+  $("#adminlock").style.display=adminOpen?"none":"block";
+  $("#adminbody").style.display=adminOpen?"block":"none";
+  if(!adminOpen)return;
+  const ids=Object.keys(S.players);
+  $("#spelarlista").innerHTML=ids.length?ids.map(id=>{
+    const p=S.players[id];
+    const sf=spelhcpFm(p),se=spelhcpEm(p);
+    return `<div class="spelarrad">
+      <input type="text" value="${esc(p.name)}" placeholder="Namn" onchange="updP('${id}','name',this.value)">
+      <input type="number" inputmode="decimal" step="0.1" value="${esc(p.hcp)}" placeholder="hcp" onchange="updP('${id}','hcp',this.value)">
+      <select onchange="updP('${id}','team',this.value)">
+        <option value="" ${!p.team?"selected":""}>— lag —</option>
+        ${TEAMS().map(t=>`<option value="${t}" ${p.team===t?"selected":""}>${t}</option>`).join("")}
+        ${p.team&&!TEAMS().includes(p.team)?`<option value="${p.team}" selected>${p.team} (utanför)</option>`:""}
+      </select>
+      <button class="delx" onclick="delP('${id}')" aria-label="Ta bort">✕</button>
+      <div style="grid-column:1/5;font-size:.72rem;color:var(--sand);margin-bottom:6px">Spelhcp: VGK <b style="color:var(--krita)">${sf===null?"?":sf}</b> · Envi <b style="color:var(--krita)">${se===null?"?":se}</b></div>
+    </div>`;
+  }).join(""):`<div class="tomt">Inga spelare ännu — börja här.</div>`;
+
+  const pids=Object.keys(S.pairs);
+  const opts=sel=>`<option value="">— spelare —</option>`+Object.keys(S.players).map(id=>
+    `<option value="${id}" ${sel===id?"selected":""}>${esc(S.players[id].name)} (${S.players[id].team||"?"})</option>`).join("");
+  $("#parlista").innerHTML=pids.length?pids.map(id=>{
+    const pr=S.pairs[id];
+    const lagSet=new Set([pr.p1,pr.p2,pr.p3].filter(x=>x&&S.players[x]).map(x=>S.players[x].team));
+    const warn=lagSet.size>1;
+    const c=pairHcp(pr);
+    return `<div style="display:grid;grid-template-columns:1fr 1fr 40px;gap:6px;margin-bottom:6px;align-items:center">
+      <select onchange="updPair('${id}','p1',this.value)">${opts(pr.p1)}</select>
+      <select onchange="updPair('${id}','p2',this.value)">${opts(pr.p2)}</select>
+      <button class="delx" onclick="delPair('${id}')" aria-label="Ta bort">✕</button>
+      <select onchange="updPair('${id}','p3',this.value)" style="grid-column:1/2">${`<option value="">— ingen tredje —</option>`+Object.keys(S.players).map(pid2=>`<option value="${pid2}" ${pr.p3===pid2?"selected":""}>${esc(S.players[pid2].name)} (${S.players[pid2].team||"?"})</option>`).join("")}</select>
+      <div style="grid-column:2/4;font-size:.72rem;color:var(--sand);align-self:center;margin-bottom:4px">${pr.p3?"Trio-hcp (20/15/10)":"Par-hcp (35/15)"}: <b style="color:var(--krita)">${c===null?"?":c}</b></div>
+      ${warn?`<div style="grid-column:1/4;color:var(--flagga);font-size:.75rem">Obs: spelarna är i olika lag.</div>`:""}
+    </div>`;
+  }).join(""):`<div class="tomt">Inga scramble-lag ännu — knappen nedan bildar dem automatiskt från lagen.</div>`;
+
+  const R=S.settings.ratings;
+  if(!document.activeElement.closest||!document.activeElement.closest("#ratinglista")){
+    $("#ratinglista").innerHTML=
+      `<div class="ratgrid"><span class="lbl">VGK Gul</span>
+        <input type="number" step="0.1" inputmode="decimal" placeholder="CR" value="${R.vgk.cr}" data-rt="vgk.cr">
+        <input type="number" step="1" inputmode="numeric" placeholder="Slope" value="${R.vgk.sl}" data-rt="vgk.sl"></div>
+      <div class="ratgrid"><span class="lbl">Envi Gul</span>
+        <input type="number" step="0.1" inputmode="decimal" placeholder="CR (2 varv)" value="${R.envi.cr}" data-rt="envi.cr">
+        <input type="number" step="1" inputmode="numeric" placeholder="Slope" value="${R.envi.sl}" data-rt="envi.sl"></div>`;
+  }
+  const fmL=Object.keys(S.locks.fm||{}),emL=Object.keys(S.locks.em||{});
+  $("#laslista").innerHTML=(fmL.length+emL.length)?
+    fmL.map(id=>S.players[id]?`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--linje)"><span>FM · ${esc(S.players[id].name)}</span><button class="btn ghost" style="padding:7px 12px" onclick="lasUpp('fm','${id}')">Lås upp</button></div>`:"").join("")+
+    emL.map(id=>S.pairs[id]?`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--linje)"><span>EM · ${esc(pairName(id))}</span><button class="btn ghost" style="padding:7px 12px" onclick="lasUpp('em','${id}')">Lås upp</button></div>`:"").join("")
+    :`<div class="tomt">Inga inlämnade ronder ännu.</div>`;
+  const aw=S.settings.awards||{};
+  const awOpts=sel=>`<option value="">— ingen —</option>`+Object.keys(S.players).map(id=>
+    `<option value="${id}" ${sel===id?"selected":""}>${esc(S.players[id].name)}</option>`).join("");
+  $("#aw-drive").innerHTML=awOpts(aw.drive);
+  $("#aw-narmast").innerHTML=awOpts(aw.narmast);
+  $("#aw-drive").onchange=e=>dbSet("settings/awards/drive",e.target.value||null);
+  $("#aw-narmast").onchange=e=>dbSet("settings/awards/narmast",e.target.value||null);
+  const tbtn=document.getElementById("btn-testmode");
+  if(S.settings.testmode==="1"){tbtn.textContent="Stäng testläget (tillbaka till Västerås GK)";tbtn.className="btn fara";}
+  else{tbtn.textContent="Aktivera testläge (Sollentuna GK)";tbtn.className="btn ghost";}
+  if(!document.activeElement||document.activeElement.tagName!=="TEXTAREA"){
+    $("#set-schema").value=S.settings.schema;
+    $("#set-sidor").value=S.settings.sidor;
+    $("#set-ovrigt").value=S.settings.ovrigt;
+  }
+}
+function lasUpp(pass,unit){
+  dbSet(`locks/${pass}/${unit}`,null);
+  saga("Upplåst. Spelaren kan nu rätta och lämna in igen.");
+}
+function updP(id,f,v){
+  if(f==="hcp")v=v===""?"":Number(v);
+  dbSet(`players/${id}/${f}`,v);
+}
+async function delP(id){if(await fraga("Ta bort spelaren och dennes scores?"))dbUpdate({["players/"+id]:null,["morning/"+id]:null});}
+async function delPair(id){if(await fraga("Ta bort paret och dess scores?"))dbUpdate({["pairs/"+id]:null,["afternoon/"+id]:null});}
+function updPair(id,f,v){dbSet(`pairs/${id}/${f}`,v||null);}
+/* p3="" via select -> null, hanteras av raden ovan */
+
+document.getElementById("btn-unlock").onclick=()=>{
+  if(pwHash($("#adminpw").value)===currentHash()){
+    adminOpen=true;sessionStorage.setItem("ro_admin","1");$("#adminpw").value="";$("#pwfel").style.display="none";render();
+  }else{$("#pwfel").style.display="block";}
+};
+document.getElementById("adminpw").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("btn-unlock").click();});
+document.getElementById("btn-setpw").onclick=()=>{
+  const v=$("#newpw").value.trim();
+  if(v.length<4){saga("Minst 4 tecken.");return;}
+  dbSet("settings/adminHash",pwHash(v));$("#newpw").value="";
+  saga("Lösenordet är bytt. Det gäller alla som öppnar admin framöver.");
+};
+const MOCKNAMN=["Birger Bunkerlund","Putte Greenqvist","Gösta Fairwaysson","Nisse Hookström","Sune Slajsberg","Evert Eaglelund","Bosse Birdiekvist","Rutger Ruffman","Kenta Krattman","Albert Albatrossén","Douglas Drivestedt","Pelle Puttström","Freddie Flaggkvist","Torsten Teeberg","Micke Mulliganson","Olle Outenberg"];
+document.getElementById("btn-mock").onclick=()=>{
+  const n=Math.round(Number(document.getElementById("mock-antal").value));
+  if(!(n>=1&&n<=12)){saga("Ange 1–12 låtsasspelare.");return;}
+  const pool=[...MOCKNAMN].sort(()=>Math.random()-0.5);
+  const upd={};
+  for(let i=0;i<n;i++){
+    const namn=pool[i%pool.length]+(i>=pool.length?" "+(Math.floor(i/pool.length)+1):"");
+    const hcp=Math.round((4+Math.random()*32)*10)/10;
+    upd["players/m"+Date.now().toString(36)+"_"+i]={name:namn,hcp:hcp,team:"",mock:true};
+  }
+  dbUpdate(upd);
+  saga(n+" låtsasspelare skapade. Kör snake draft och autobygget för att testa flödena.");
+};
+document.getElementById("btn-mockclear").onclick=async()=>{
+  const mids=Object.keys(S.players).filter(id=>S.players[id].mock);
+  if(!mids.length){saga("Inga låtsasspelare att rensa.");return;}
+  if(!await fraga(`Rensa ${mids.length} låtsasspelare? Deras scores och scramble-lag tas också bort. Riktiga spelare rörs inte.`))return;
+  const upd={};
+  mids.forEach(id=>{upd["players/"+id]=null;upd["morning/"+id]=null;upd["locks/fm/"+id]=null;});
+  Object.keys(S.pairs).forEach(pid=>{
+    const pr=S.pairs[pid];
+    if([pr.p1,pr.p2,pr.p3].some(x=>x&&mids.includes(x))){upd["pairs/"+pid]=null;upd["afternoon/"+pid]=null;upd["locks/em/"+pid]=null;}
+  });
+  dbUpdate(upd);
+  if(ME&&mids.includes(ME))setMe(null);
+  saga("Låtsasspelarna är rensade.");
+};
+document.getElementById("btn-nyspelare").onclick=()=>{
+  dbSet("players/p"+Date.now().toString(36),{name:"",hcp:"",team:""});
+};
+document.getElementById("btn-nyttpar").onclick=()=>{dbSet("pairs/par"+Date.now().toString(36),{p1:"",p2:""});};
+document.getElementById("btn-autopar").onclick=async()=>{
+  const upd={};let i=0;
+  TEAMS().forEach(t=>{
+    let rest=Object.keys(S.players).filter(id=>S.players[id].team===t)
+      .sort((a,b)=>Number(S.players[a].hcp??99)-Number(S.players[b].hcp??99));
+    if(rest.length%2===1&&rest.length>=3){          /* udda: en trio låg/mitt/hög */
+      const trio=[rest[0],rest[Math.floor(rest.length/2)],rest[rest.length-1]];
+      rest=rest.filter(x=>!trio.includes(x));
+      upd["pairs/g"+(++i)]={p1:trio[0],p2:trio[1],p3:trio[2]};
+    }
+    while(rest.length>=2){                          /* para lägsta med högsta */
+      upd["pairs/g"+(++i)]={p1:rest[0],p2:rest[rest.length-1]};
+      rest=rest.slice(1,-1);
+    }
+  });
+  if(!Object.keys(upd).length){saga("Inga lag att bygga från — sätt lag på spelarna först (snake draft eller manuellt).");return;}
+  if(!await fraga("Bilda scramble-lag automatiskt från lagen? Befintliga scramble-lag och deras eftermiddags-scores ersätts."))return;
+  dbUpdate({pairs:null,afternoon:null,"locks/em":null});
+  dbUpdate(upd);
+};
+document.getElementById("btn-snake").onclick=()=>{
+  const ids=Object.keys(S.players).filter(id=>S.players[id].hcp!==""&&S.players[id].hcp!==undefined);
+  if(ids.length<2){saga("Lägg in spelare med hcp först.");return;}
+  ids.sort((a,b)=>Number(S.players[a].hcp)-Number(S.players[b].hcp));
+  const teams=TEAMS(),k=teams.length,upd={};
+  ids.forEach((id,i)=>{
+    const varv=Math.floor(i/k),pos=i%k;
+    upd["players/"+id+"/team"]=varv%2===0?teams[pos]:teams[k-1-pos];
+  });
+  dbUpdate(upd);
+};
+document.getElementById("btn-saveratings").onclick=()=>{
+  const R=JSON.parse(JSON.stringify(S.settings.ratings));
+  document.querySelectorAll("#ratinglista input[data-rt]").forEach(inp=>{
+    const [c,f]=inp.dataset.rt.split(".");
+    R[c][f]=inp.value===""?null:Number(inp.value);
+  });
+  for(const c of ["vgk","envi"]){
+    const r=R[c];
+    if(r.cr==null||r.sl==null||isNaN(r.cr)||isNaN(r.sl)){saga("Både CR och slope måste vara ifyllda för "+(c==="vgk"?"Västerås GK":"EnviLoopen")+".");return;}
+  }
+  dbSet("settings/ratings",R);
+  saga("Banvärdena är sparade. Alla spelhandicap räknas om direkt.");
+};
+document.getElementById("btn-savesettings").onclick=()=>{
+  dbUpdate({"settings/schema":$("#set-schema").value,"settings/sidor":$("#set-sidor").value,"settings/ovrigt":$("#set-ovrigt").value});
+  saga("Texterna är sparade.");
+};
+document.getElementById("btn-final").onclick=async()=>{
+  const on=S.settings.final==="1";
+  if(!await fraga(on?"Återöppna tävlingen? Score kan då ändras igen.":"Avsluta tävlingen och fastställa slutresultatet? All scoreändring spärras (kan återöppnas)."))return;
+  dbSet("settings/final",on?"0":"1");
+};
+document.getElementById("btn-testmode").onclick=async()=>{
+  const on=S.settings.testmode==="1";
+  const msg=on
+    ?"Stänga testläget och gå tillbaka till Västerås GK? Förmiddagens test-scores nollställs."
+    :"Aktivera testläget (Sollentuna GK som förmiddagsbana)? Eventuella förmiddags-scores nollställs.";
+  if(!await fraga(msg))return;
+  dbUpdate({"settings/testmode":on?"0":"1",morning:null,"locks/fm":null});
+};
+document.getElementById("btn-reset").onclick=async()=>{
+  if(!await fraga("Nollställa ALLA scores? Detta går inte att ångra."))return;
+  dbUpdate({morning:null,afternoon:null,locks:null});
+  saga("Alla scores är nollställda. Spelare, lag och par är kvar.");
+};
+document.getElementById("btn-clearcache").onclick=async()=>{
+  if(!await fraga("Rensa lokal cache på den här enheten? I delat läge hämtas allt om från molnet; i lokalt läge raderas all data på enheten."))return;
+  localStorage.removeItem(DB_ROOT);
+  localStorage.removeItem(DB_ROOT+"_v");
+  sessionStorage.removeItem("ro_admin");
+  location.reload();
+};
+
+document.querySelectorAll("nav.tabs button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll("nav.tabs button").forEach(x=>x.classList.remove("act"));
+    b.classList.add("act");
+    document.querySelectorAll(".tabpane").forEach(p=>p.classList.remove("act"));
+    document.getElementById("pane-"+b.dataset.tab).classList.add("act");
+    ui.tab=b.dataset.tab;window.scrollTo(0,0);
+  };
+});
+document.getElementById("pane-score").classList.add("act");
+initStorage();
+</script>
+</body>
+</html>
