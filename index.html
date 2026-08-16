@@ -30,6 +30,7 @@ header{padding:calc(14px + env(safe-area-inset-top)) 0 10px;border-bottom:1px so
 .brand .plats{font-size:.72rem;color:var(--sand);letter-spacing:.14em;text-transform:uppercase}
 .syncdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:6px;vertical-align:1px}
 .syncdot.on{background:#5FD068}.syncdot.local{background:var(--score)}
+#statusskydd{position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top);background:rgba(18,43,29,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:60}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(13,26,18,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--linje);padding-bottom:env(safe-area-inset-bottom)}
 nav.tabs .wrap{display:flex}
 nav.tabs button{flex:1;background:none;border:none;color:var(--sand);font-family:inherit;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;padding:10px 0 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -134,11 +135,12 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
 </head>
 <body>
 
+<div id="statusskydd"></div>
 <header>
   <div class="wrap">
     <div class="brand">
       <h1>Ringwall <span class="open">Open</span></h1>
-      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.0</div>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.1</div>
     </div>
   </div>
 </header>
@@ -214,9 +216,10 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input type="number" id="mock-antal" min="1" max="12" value="8" inputmode="numeric" style="width:76px">
             <button class="btn ghost" id="btn-mock">Skapa</button>
+            <button class="btn ghost" id="btn-mockscore">Slumpa scores</button>
             <button class="btn ghost" id="btn-mockclear" style="color:var(--flagga)">Rensa alla (test)</button>
           </div>
-          <p class="hint" style="margin-top:8px">Golfklingande namn med slumpad hcp 4,0–36,0. Rensningen tar bara låtsasspelarna, deras scores och scramble-lag — riktiga spelare rörs aldrig.</p>
+          <p class="hint" style="margin-top:8px">Golfklingande namn med slumpad hcp 4,0–36,0. "Slumpa scores" fyller trolig score per hål utifrån varje spelares hcp — förmiddag för alla låtsasspelare, eftermiddag för scramble-lag med enbart låtsasspelare; låsta ronder rörs inte. Rensningen tar bara låtsasspelarna, deras scores och scramble-lag — riktiga spelare rörs aldrig.</p>
         </div>
       </div>
       <div class="panel">
@@ -326,7 +329,7 @@ const FIREBASE_CONFIG = {
   appId: "1:161650064745:web:d27f95a34e752a53fd51f8"
 };
 const DB_ROOT = "ringwall2026";
-const APP_VERSION = "17";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
+const APP_VERSION = "18";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
 
 /* ================= BANDATA =================
    Västerås GK 18-hålsbanan, par 70. Hål (par/index) enligt klubbens
@@ -1037,6 +1040,31 @@ document.getElementById("btn-mock").onclick=()=>{
   }
   dbUpdate(upd);
   saga(n+" låtsasspelare skapade. Kör snake draft och autobygget för att testa flödena.");
+};
+document.getElementById("btn-mockscore").onclick=async()=>{
+  const mids=Object.keys(S.players).filter(id=>S.players[id].mock);
+  if(!mids.length){saga("Skapa låtsasspelare först.");return;}
+  if(!await fraga("Slumpa troliga scores för alla låtsasspelare? Förmiddag för var och en, eftermiddag för scramble-lag med enbart låtsasspelare. Olåsta test-scores skrivs över."))return;
+  /* Trolig spridning runt spelarens personliga par (par + erhållna slag):
+     -1 födelsedagsslag, 0 håller sitt hcp, +1/+2/+3 vardagsgolf. */
+  const dra=vikt=>{let r=Math.random(),acc=0;for(const [v,p] of vikt){acc+=p;if(r<acc)return v;}return 1;};
+  const wFm=[[-1,.12],[0,.38],[1,.32],[2,.14],[3,.04]];
+  const wEm=[[-1,.25],[0,.45],[1,.25],[2,.05]];   /* scramble går bättre */
+  const upd={},C=fmCourse();
+  mids.forEach(id=>{
+    if(isLocked("fm",id))return;
+    const s=spelhcpFm(S.players[id]);
+    C.holes.forEach(hh=>{upd[`morning/${id}/h${hh.n}`]=Math.max(1,hh.par+shotsOnHole(s,hh.idx,18)+dra(wFm));});
+  });
+  Object.keys(S.pairs).forEach(pid=>{
+    const pr=S.pairs[pid],mem=[pr.p1,pr.p2,pr.p3].filter(Boolean);
+    if(!mem.length||!mem.every(x=>S.players[x]&&S.players[x].mock))return;
+    if(isLocked("em",pid))return;
+    const c=pairHcp(pr);if(c===null)return;
+    ENVI_RANKED.forEach(hh=>{upd[`afternoon/${pid}/h${hh.n}`]=Math.max(1,hh.par+shotsOnHole(c,hh.rank9,9)+dra(wEm));});
+  });
+  dbUpdate(upd);
+  saga("Scores slumpade — kika på ställningen, höjdpunkterna och utmärkelserna.");
 };
 document.getElementById("btn-mockclear").onclick=async()=>{
   const mids=Object.keys(S.players).filter(id=>S.players[id].mock);
