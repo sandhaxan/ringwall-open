@@ -140,7 +140,7 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
   <div class="wrap">
     <div class="brand">
       <h1>Ringwall <span class="open">Open</span></h1>
-      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.1</div>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.2</div>
     </div>
   </div>
 </header>
@@ -329,7 +329,7 @@ const FIREBASE_CONFIG = {
   appId: "1:161650064745:web:d27f95a34e752a53fd51f8"
 };
 const DB_ROOT = "ringwall2026";
-const APP_VERSION = "18";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
+const APP_VERSION = "19";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
 
 /* ================= BANDATA =================
    Västerås GK 18-hålsbanan, par 70. Hål (par/index) enligt klubbens
@@ -432,7 +432,7 @@ function saga(msg){
   clearTimeout(_toastT);_toastT=setTimeout(()=>{t.style.display="none";},3500);
 }
 /* ================= STATE & LAGRING ================= */
-let S={players:{},morning:{},pairs:{},afternoon:{},locks:{fm:{},em:{}},settings:JSON.parse(JSON.stringify(DEFAULT_SETTINGS))};
+let S={players:{},morning:{},pairs:{},afternoon:{},locks:{fm:{},em:{}},events:{},settings:JSON.parse(JSON.stringify(DEFAULT_SETTINGS))};
 let db=null, usingFirebase=false;
 let ui={tab:"score",pass:"fm",unit:null};
 let ME=localStorage.getItem("ro_me")||null;
@@ -456,7 +456,7 @@ function normalize(raw){
   const st=Object.assign({},DEFAULT_SETTINGS,raw.settings||{});
   st.ratings=mergeRatings(DEFAULT_RATINGS,(raw.settings||{}).ratings);
   const lk=raw.locks||{};
-  return {players:raw.players||{},morning:raw.morning||{},pairs:raw.pairs||{},afternoon:raw.afternoon||{},locks:{fm:lk.fm||{},em:lk.em||{}},settings:st};
+  return {players:raw.players||{},morning:raw.morning||{},pairs:raw.pairs||{},afternoon:raw.afternoon||{},locks:{fm:lk.fm||{},em:lk.em||{}},events:raw.events||{},settings:st};
 }
 function initStorage(){
   const dot=document.getElementById("syncdot");
@@ -680,6 +680,11 @@ function bump(pass,unit,holeNo,d){
   if(cur===undefined||cur===null||cur===""){next=d>0?(course.holes.find(x=>x.n===holeNo)||{par:4}).par:null;}
   else{next=Number(cur)+d;if(next<0)next=null;}
   dbSet(`${branch}/${unit}/h${holeNo}`,next===null?null:next);
+  if(next!==null&&next>=1){
+    const par=(course.holes.find(x=>x.n===holeNo)||{}).par;
+    if(par&&next<=par-1)
+      dbSet(`events/ev${Date.now().toString(36)}${Math.floor(Math.random()*1e4)}`,{t:Date.now(),pass:pass,unit:unit,h:holeNo});
+  }
 }
 
 /* ---- Ställning ---- */
@@ -862,22 +867,39 @@ function computeAch(){
   if(aw.narmast&&S.players[aw.narmast])add("narmast",S.players[aw.narmast].name);
   return res;
 }
-function computeHighlights(){
-  const out=[],C=fmCourse();
-  for(const pid in S.players){const row=S.morning[pid]||{};
-    C.holes.forEach(hh=>{const g=row["h"+hh.n];if(g===undefined||g===null||g==="")return;
-      const gn=Number(g);if(gn>0&&gn<=hh.par-1)out.push({h:hh.n,ic:gn===1?"👑":(gn<=hh.par-2?"🦅":"🐦"),namn:S.players[pid].name,pass:"FM"});});}
-  for(const id in S.pairs){const row=S.afternoon[id]||{};
-    ENVI.holes.forEach(hh=>{const g=row["h"+hh.n];if(g===undefined||g===null||g==="")return;
-      const gn=Number(g);if(gn>0&&gn<=hh.par-1)out.push({h:hh.n,ic:gn===1?"👑":(gn<=hh.par-2?"🦅":"🐦"),namn:pairName(id),pass:"EM"});});}
-  out.sort((a,b)=>(a.pass===b.pass)?b.h-a.h:(a.pass==="EM"?-1:1));
-  return out;
-}
 function renderHighlights(){
-  const hl=computeHighlights();
-  $("#hojdpunkter").innerHTML=hl.length?
-    `<div class="panel" style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px">${hl.slice(0,12).map(x=>
-      `<span style="font-size:.78rem;border:1px solid var(--linje);border-radius:999px;padding:4px 10px;white-space:nowrap">${x.ic} ${esc(x.namn)} · ${x.pass} hål ${x.h}</span>`).join("")}${hl.length>12?`<span style="font-size:.78rem;color:var(--sand);padding:4px 4px">+${hl.length-12} till</span>`:""}</div>`:"";
+  const nu=Date.now(),seen={},list=[];
+  Object.values(S.events||{}).sort((a,b)=>b.t-a.t).forEach(e=>{
+    if(!e||!e.unit||!e.h)return;
+    const key=e.pass+"|"+e.unit+"|"+e.h;
+    if(seen[key])return;seen[key]=1;
+    /* Sanningen härleds alltid ur aktuell score — rättade typos försvinner själva */
+    let par,gross,namn;
+    if(e.pass==="fm"){
+      const p=S.players[e.unit];if(!p)return;
+      const hh=fmCourse().holes.find(x=>x.n===e.h);if(!hh)return;
+      par=hh.par;gross=(S.morning[e.unit]||{})["h"+e.h];namn=p.name;
+    }else{
+      if(!S.pairs[e.unit])return;
+      const hh=ENVI.holes.find(x=>x.n===e.h);if(!hh)return;
+      par=hh.par;gross=(S.afternoon[e.unit]||{})["h"+e.h];namn=pairName(e.unit);
+    }
+    if(gross===undefined||gross===null||gross==="")return;
+    const g=Number(gross);
+    if(g<1||g>par-1)return;
+    const ic=g===1?"👑":(g<=par-2?"🦅":"🐦");
+    const min=Math.floor((nu-e.t)/60000);
+    const tid=min<1?"nyss":(min<60?min+" min sedan":Math.floor(min/60)+" h sedan");
+    list.push({ic,namn,pass:e.pass==="fm"?"FM":"EM",h:e.h,tid});
+  });
+  const top=list.slice(0,5);
+  $("#hojdpunkter").innerHTML=top.length?
+    `<div class="panel" style="padding:10px 14px">
+      <div style="font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sand);margin-bottom:6px">Senaste händelserna</div>
+      ${top.map(x=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.84rem;padding:5px 0">
+        <span>${x.ic} ${esc(x.namn)} · ${x.pass} hål ${x.h}</span>
+        <span style="color:var(--sand);font-size:.72rem;white-space:nowrap">${x.tid}</span></div>`).join("")}
+    </div>`:"";
 }
 function renderAch(){
   const res=computeAch();
@@ -1051,17 +1073,26 @@ document.getElementById("btn-mockscore").onclick=async()=>{
   const wFm=[[-1,.12],[0,.38],[1,.32],[2,.14],[3,.04]];
   const wEm=[[-1,.25],[0,.45],[1,.25],[2,.05]];   /* scramble går bättre */
   const upd={},C=fmCourse();
+  let evN=0;
   mids.forEach(id=>{
     if(isLocked("fm",id))return;
     const s=spelhcpFm(S.players[id]);
-    C.holes.forEach(hh=>{upd[`morning/${id}/h${hh.n}`]=Math.max(1,hh.par+shotsOnHole(s,hh.idx,18)+dra(wFm));});
+    C.holes.forEach(hh=>{
+      const g=Math.max(1,hh.par+shotsOnHole(s,hh.idx,18)+dra(wFm));
+      upd[`morning/${id}/h${hh.n}`]=g;
+      if(g<=hh.par-1)upd[`events/mock${Date.now().toString(36)}_${++evN}`]={t:Date.now()-Math.floor(Math.random()*10800000),pass:"fm",unit:id,h:hh.n};
+    });
   });
   Object.keys(S.pairs).forEach(pid=>{
     const pr=S.pairs[pid],mem=[pr.p1,pr.p2,pr.p3].filter(Boolean);
     if(!mem.length||!mem.every(x=>S.players[x]&&S.players[x].mock))return;
     if(isLocked("em",pid))return;
     const c=pairHcp(pr);if(c===null)return;
-    ENVI_RANKED.forEach(hh=>{upd[`afternoon/${pid}/h${hh.n}`]=Math.max(1,hh.par+shotsOnHole(c,hh.rank9,9)+dra(wEm));});
+    ENVI_RANKED.forEach(hh=>{
+      const g=Math.max(1,hh.par+shotsOnHole(c,hh.rank9,9)+dra(wEm));
+      upd[`afternoon/${pid}/h${hh.n}`]=g;
+      if(g<=hh.par-1)upd[`events/mock${Date.now().toString(36)}e_${++evN}`]={t:Date.now()-Math.floor(Math.random()*10800000),pass:"em",unit:pid,h:hh.n};
+    });
   });
   dbUpdate(upd);
   saga("Scores slumpade — kika på ställningen, höjdpunkterna och utmärkelserna.");
@@ -1072,10 +1103,9 @@ document.getElementById("btn-mockclear").onclick=async()=>{
   if(!await fraga(`Rensa ${mids.length} låtsasspelare? Deras scores och scramble-lag tas också bort. Riktiga spelare rörs inte.`))return;
   const upd={};
   mids.forEach(id=>{upd["players/"+id]=null;upd["morning/"+id]=null;upd["locks/fm/"+id]=null;});
-  Object.keys(S.pairs).forEach(pid=>{
-    const pr=S.pairs[pid];
-    if([pr.p1,pr.p2,pr.p3].some(x=>x&&mids.includes(x))){upd["pairs/"+pid]=null;upd["afternoon/"+pid]=null;upd["locks/em/"+pid]=null;}
-  });
+  const mockPairs=Object.keys(S.pairs).filter(pid=>{const pr=S.pairs[pid];return [pr.p1,pr.p2,pr.p3].some(x=>x&&mids.includes(x));});
+  mockPairs.forEach(pid=>{upd["pairs/"+pid]=null;upd["afternoon/"+pid]=null;upd["locks/em/"+pid]=null;});
+  Object.keys(S.events||{}).forEach(id=>{const e=S.events[id];if(e&&(mids.includes(e.unit)||mockPairs.includes(e.unit)))upd["events/"+id]=null;});
   dbUpdate(upd);
   if(ME&&mids.includes(ME))setMe(null);
   saga("Låtsasspelarna är rensade.");
@@ -1143,11 +1173,13 @@ document.getElementById("btn-testmode").onclick=async()=>{
     ?"Stänga testläget och gå tillbaka till Västerås GK? Förmiddagens test-scores nollställs."
     :"Aktivera testläget (Sollentuna GK som förmiddagsbana)? Eventuella förmiddags-scores nollställs.";
   if(!await fraga(msg))return;
-  dbUpdate({"settings/testmode":on?"0":"1",morning:null,"locks/fm":null});
+  const evUpd={"settings/testmode":on?"0":"1",morning:null,"locks/fm":null};
+  Object.keys(S.events||{}).forEach(id=>{if(S.events[id]&&S.events[id].pass==="fm")evUpd["events/"+id]=null;});
+  dbUpdate(evUpd);
 };
 document.getElementById("btn-reset").onclick=async()=>{
   if(!await fraga("Nollställa ALLA scores? Detta går inte att ångra."))return;
-  dbUpdate({morning:null,afternoon:null,locks:null});
+  dbUpdate({morning:null,afternoon:null,locks:null,events:null});
   saga("Alla scores är nollställda. Spelare, lag och par är kvar.");
 };
 document.getElementById("btn-clearcache").onclick=async()=>{
