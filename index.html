@@ -140,7 +140,7 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
   <div class="wrap">
     <div class="brand">
       <h1>Ringwall <span class="open">Open</span></h1>
-      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.4</div>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.6</div>
     </div>
   </div>
 </header>
@@ -163,7 +163,7 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
     <div id="hojdpunkter"></div>
     <h3 id="fm-rubrik">Förmiddag — Bästboll, Västerås GK (18 hål)</h3>
     <div class="panel" id="res-fm"></div>
-    <h3>Eftermiddag — Scramble, EnviLoopen (9 hål)</h3>
+    <h3 id="em-rubrik">Eftermiddag — Scramble, EnviLoopen (9 hål)</h3>
     <div class="panel" id="res-em"></div>
     <h3>Individuellt (Stableford, förmiddagsronden)</h3>
     <div class="panel" id="res-ind"></div>
@@ -175,8 +175,8 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
     <h2 id="ban-fm-rubrik">Förmiddag — Västerås GK</h2>
     <p class="hint" id="ban-fm-text"></p>
     <div id="banlista-vgk"></div>
-    <h2 style="margin-top:26px">Eftermiddag — EnviLoopen, Skerike GK</h2>
-    <p class="hint">Par 31 över 9 hål: sex par 3, två par 4 och en par 5. Öppen hedbana med små greener — precision slår kraft här. Mer info i <a href="https://skerikegk.se/spela/9-halsbanan/" target="_blank" rel="noopener">klubbens banguide</a>.</p>
+    <h2 style="margin-top:26px" id="ban-em-rubrik">Eftermiddag</h2>
+    <p class="hint" id="ban-em-text"></p>
     <div id="banlista-envi"></div>
   </section>
 
@@ -237,8 +237,16 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
         </div>
       </div>
       <div class="panel">
+        <h3 style="margin-top:0">Eftermiddagsbana</h3>
+        <p class="hint" style="margin-top:0">Scramblen spelas på vald bana. Vid byte nollställs eftermiddagens scores, lås och händelser — par och index skiljer sig mellan banorna. Spelare, lag och scramble-lag rörs inte.</p>
+        <select id="set-emcourse">
+          <option value="sker9">Skerike GK — 18-hålsbanan, hål 1–9 (par 35)</option>
+          <option value="envi">EnviLoopen (par 31)</option>
+        </select>
+      </div>
+      <div class="panel">
         <h3 style="margin-top:0">Banvärden (CR / Slope)</h3>
-        <p class="hint" style="margin-top:0">Gul tee, herrar. EnviLoopens värden är klubbens officiella (värderad 2021, angivna för 2 varv — appen räknar om till 9 hål). <b>Verifiera Västerås GK mot klubbens slopetabell på plats</b> — deras värden går inte att hämta maskinellt och banan byggdes om 2019.</p>
+        <p class="hint" style="margin-top:0">Gul tee, herrar. Skerike-värdena är klubbens officiella: 18-hålsbanan 71,5/122 (CR för 18 hål) och EnviLoopen 59,1/98 (för 2 varv) — appen räknar om till 9 hål. <b>Verifiera Västerås GK mot klubbens slopetabell på plats</b> — deras värden går inte att hämta maskinellt och banan byggdes om 2019.</p>
         <div id="ratinglista"></div>
         <div style="margin-top:10px"><button class="btn" id="btn-saveratings">Spara banvärden</button></div>
       </div>
@@ -248,6 +256,8 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
         <textarea id="set-schema"></textarea>
         <label class="fld">Sidotävlingar</label>
         <textarea id="set-sidor"></textarea>
+        <label class="fld">Kostnader</label>
+        <textarea id="set-kostnader"></textarea>
         <label class="fld">Övrig praktisk info</label>
         <textarea id="set-ovrigt"></textarea>
         <div style="margin-top:12px"><button class="btn" id="btn-savesettings">Spara texter</button></div>
@@ -329,7 +339,7 @@ const FIREBASE_CONFIG = {
   appId: "1:161650064745:web:d27f95a34e752a53fd51f8"
 };
 const DB_ROOT = "ringwall2026";
-const APP_VERSION = "22";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
+const APP_VERSION = "24";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
 
 /* ================= BANDATA =================
    Västerås GK 18-hålsbanan, par 70. Hål (par/index) enligt klubbens
@@ -379,6 +389,19 @@ const SOLL = {name:"Sollentuna GK (TEST)", par:72, rating:{cr:71.8,sl:128}, hole
 ]};
 /* EnviLoopen (Skerike GK), par 31 över 9 hål. Längder [gul, röd].
    Index enligt scorekortet (udda 1–17, banan spelas normalt 2 varv). */
+/* Alternativ EM-bana: Skerike GK 18-hålsbanan, hål 1–9, par 35, gul tee.
+   Hål/index/längder från klubbens banguide; CR/slope klubbens officiella. */
+const SKER9 = {name:"Skerike GK (hål 1–9)", par:35, holes:[
+ {n:1,par:4,idx:14,m:[339],tips:"Brett öppningshål, men out lurar på höger sida. Sikta på högra fairwaybunkern — den är längre bort än den ser ut."},
+ {n:2,par:4,idx:4, m:[331],tips:"Håll utslaget mot vänstra sidan av fairway, då öppnar sig vinkeln in mot green."},
+ {n:3,par:3,idx:12,m:[132],tips:"Ravin till höger, djup bunker till vänster. Det finns bara ett vettigt mål: green."},
+ {n:4,par:5,idx:2, m:[528],tips:"Banans längsta hål och näst svårast enligt index. Tre raka slag slår det mesta här."},
+ {n:5,par:3,idx:18,m:[135],tips:"Spelas ofta i motvind — ta ordentligt med klubba. Mitt på green räcker långt."},
+ {n:6,par:4,idx:10,m:[279],tips:"Lägg utslaget mot höger sida av fairway så blir det mindre vatten att bära på inspelet."},
+ {n:7,par:4,idx:8, m:[374],tips:"Långtslående kan sikta på kyrktornet rakt över kullarna. Osäker? Håll höger — gräset på kullarna är tjockt."},
+ {n:8,par:4,idx:6, m:[334],tips:"Vänster sida kortar hålet. Vattnet ligger både framför och till höger om green."},
+ {n:9,par:4,idx:16,m:[356],tips:"Kräver ett långt, rakt utslag. Inspelet är uppför och ska över buskaget före green — ta en klubba extra."}
+]};
 const ENVI = {name:"EnviLoopen", par:31, tees:["gul","rod"], holes:[
  {n:1,par:3,idx:15,m:[125,100],tips:"Relativt snällt öppningshål, men greenen är liten — som alla på EnviLoopen."},
  {n:2,par:4,idx:3, m:[300,240],tips:"Par 4 där långtslående kan nå greenhalsen. Diket kräver 180 meter carry — annars: lägg upp."},
@@ -396,7 +419,7 @@ const ENVI = {name:"EnviLoopen", par:31, tees:["gul","rod"], holes:[
    VGK: bästa tillgängliga uppgift (GolfPass), EJ verifierad mot klubben.
    ENVI: klubbens officiella slopetabell (värderad 2021-06-16), angiven
    för 2 varv (par 62) — appen räknar om till 9 hål.                 */
-const DEFAULT_RATINGS = {vgk:{cr:68.2,sl:121}, envi:{cr:59.1,sl:98}};
+const DEFAULT_RATINGS = {vgk:{cr:68.2,sl:121}, envi:{cr:59.1,sl:98}, sker9:{cr:71.5,sl:122}};
 /* djb2-hash för admin-lösenordet (klartexten står medvetet inte i koden). */
 const DEFAULT_PW_HASH = "h73bb36cf_12";
 const DEFAULT_SETTINGS = {
@@ -405,9 +428,11 @@ const DEFAULT_SETTINGS = {
   awards:{drive:"",narmast:""},
   final:"0",
   numTeams:"2",
+  emCourse:"sker9",
   bolltid1:"",bolltid2:"",bolltid3:"",
   ratings:DEFAULT_RATINGS,
-  schema:"[tid] — Samling Västerås GK\n[tid] — Utslag: Bästboll Stableford 18 hål, Västerås GK (lagtävling)\n[tid] — Lunch & förflyttning till Skerike GK\n[tid] — Utslag: Scramble 2-mannalag 9 hål, EnviLoopen (lagtävling)\n[tid] — Prisutdelning\nSöndag — Frivilligt individuellt varv (inget pris)",
+  schema:"[tid] — Samling Västerås GK\n[tid] — Utslag: Bästboll Stableford 18 hål, Västerås GK (lagtävling)\n[tid] — Lunch & förflyttning till Skerike GK\n[tid] — Utslag: Scramble 9 hål, Skerike GK (lagtävling)\n[tid] — Prisutdelning\nSöndag — Frivilligt individuellt varv (inget pris)",
+  kostnader:"Greenfee Västerås GK — 800 kr per person (18 hål, förmiddagen).\nGreenfee Skerike GK — 690 kr ordinarie, men säg i receptionen att vi bara spelar hål 1–9 så justeras avgiften.\nKuvertavgift — [belopp] kr per person, täcker frukost, snacks och dryck under dagen.\nBetalning via [Swish till nummer] senast [datum].",
   sidor:"Närmast hål — hål 2, Västerås GK (par 3, 125 m). Banans kortaste par 3, så alla i fältet når green och kampen om pinnen blir tät.\nLängsta drive — hål 5, Västerås GK (par 5, 470 m). Banans längsta hål med snällt index (12) — här vågar alla dra driver för fullt.\nBåda noteras under förmiddagspasset när alla spelar sin egen boll. Inga extra rundor.",
   ovrigt:"Bekräfta din exakta hcp senast den 20 september så att lagdragning och scramble-hcp stämmer från start.\nRapportera gärna hålresultat löpande i chattgruppen.\nKörtid Västerås GK → Skerike GK är ca 15 minuter."
 };
@@ -444,7 +469,7 @@ function pwHash(str){ let h=5381; for(let i=0;i<str.length;i++){h=((h<<5)+h+str.
 function mergeRatings(base,over){
   const out=JSON.parse(JSON.stringify(base));
   if(!over)return out;
-  for(const c of ["vgk","envi"]){
+  for(const c of ["vgk","envi","sker9"]){
     const o=over[c];
     if(o&&typeof o.cr==="number"&&typeof o.sl==="number"&&!isNaN(o.cr)&&!isNaN(o.sl))
       out[c]={cr:Number(o.cr),sl:Number(o.sl)};
@@ -499,6 +524,13 @@ function dbUpdate(obj){
    Spelhcp 9 hål (ENVI):  (exakt hcp / 2) × slope/113 + (CR9 − par9),
    där CR9 = klubbens 2-varvs-CR / 2 och par9 = 31. (SGF/WHS 9-hål.)  */
 function fmCourse(){return S.settings.testmode==="1"?SOLL:VGK;}
+function emCourse(){return S.settings.emCourse==="envi"?ENVI:SKER9;}
+function emRanked(){
+  const C=emCourse();
+  const sorted=[...C.holes].sort((a,b)=>a.idx-b.idx);
+  const r={};sorted.forEach((hh,i)=>r[hh.n]=i+1);
+  return C.holes.map(hh=>({...hh,rank9:r[hh.n]}));
+}
 function spelhcpFm(p){
   if(p.hcp===""||p.hcp==null)return null;
   const C=fmCourse();
@@ -507,8 +539,11 @@ function spelhcpFm(p){
 }
 function spelhcpEm(p){
   if(p.hcp===""||p.hcp==null)return null;
-  const r=S.settings.ratings.envi;
-  return Math.round((Number(p.hcp)/2)*r.sl/113+(r.cr/2-ENVI.par));
+  const C=emCourse();
+  const r=S.settings.ratings[S.settings.emCourse==="envi"?"envi":"sker9"];
+  if(!r)return null;
+  /* CR anges för 2 varv (Envi) resp 18 hål (Skerike) — halveras till 9 hål */
+  return Math.round((Number(p.hcp)/2)*r.sl/113+(r.cr/2-C.par));
 }
 /* Slag på ett hål givet spelhcp s, hålets index (1..n) och n hål.
    Plushandicap (s<0) ger tillbaka slag på de lättaste hålen.        */
@@ -539,8 +574,7 @@ function teamMorning(team){
   });
   return{holes,sum:holes.reduce((a,b)=>a+(b||0),0)};
 }
-/* EnviLoopens index (15,3,7,17,1,11,13,5,9) omrankas 1–9 för slagfördelning */
-const ENVI_RANKED=(()=>{const sorted=[...ENVI.holes].sort((a,b)=>a.idx-b.idx);const r={};sorted.forEach((h,i)=>r[h.n]=i+1);return ENVI.holes.map(h=>({...h,rank9:r[h.n]}));})();
+/* Aktiv EM-banas index omrankas 1–9 för slagfördelning — se emRanked() */
 function pairMembers(pair){
   return [pair.p1,pair.p2,pair.p3].filter(id=>id&&S.players[id]).map(id=>S.players[id]);
 }
@@ -556,7 +590,7 @@ function pairHcp(pair){
 function pairPts(pairId){
   const pair=S.pairs[pairId];if(!pair)return{holes:[],sum:0,done:0,hcp:null};
   const c=pairHcp(pair),row=S.afternoon[pairId]||{};
-  const holes=ENVI_RANKED.map(h=>stablefordPts(row["h"+h.n],h.par,shotsOnHole(c,h.rank9,9)));
+  const holes=emRanked().map(h=>stablefordPts(row["h"+h.n],h.par,shotsOnHole(c,h.rank9,9)));
   return{holes,sum:holes.reduce((a,b)=>a+(b||0),0),done:holes.filter(x=>x!==null).length,hcp:c};
 }
 function pairTeam(pairId){const pr=S.pairs[pairId];if(!pr)return null;const p1=S.players[pr.p1];return p1?p1.team:null;}
@@ -582,7 +616,7 @@ function renderScore(){
       return `<div style="font-size:.82rem;padding:4px 0"><b class="mono" style="color:${TEAMFARG[g.lag]}">Boll ${g.nr}${tid?" · "+esc(tid):""}</b> — Lag ${g.lag}: ${g.ids.map(i=>esc(S.players[i].name)).join(", ")}</div>`;}).join("")}</div>`:"";
   $("#passval").innerHTML=
     `<button class="chip ${ui.pass==='fm'?'act':''}" onclick="setPass('fm')">FM · Bästboll · ${fmCourse().name}</button>
-     <button class="chip ${ui.pass==='em'?'act':''}" onclick="setPass('em')">EM · Scramble · EnviLoopen</button>`;
+     <button class="chip ${ui.pass==='em'?'act':''}" onclick="setPass('em')">EM · Scramble · ${emCourse().name}</button>`;
   document.getElementById("vemrad").innerHTML = meName()
     ? `Den här telefonen: <b>${esc(meName())}</b> <button class="chip" style="padding:3px 10px;font-size:.72rem;margin-left:4px" onclick="bytPerson()">byt person</button><br>Föra score åt någon annan utan att byta? Tryck bara på namnet nedan och bekräfta i rutan.`
     : (Object.keys(S.players).length ? `Välj dig själv nedan så minns telefonen vem du är.` : "");
@@ -640,9 +674,9 @@ function renderGridFM(pid){
 function renderGridEM(pairId){
   const res=pairPts(pairId),row=S.afternoon[pairId]||{};
   const locked=isLocked("em",pairId);
-  let html=`<div class="holemeta" style="margin-bottom:8px">${esc(pairName(pairId))} · EnviLoopen, gul tee · Scramble-hcp <b>${res.hcp===null?"?":res.hcp}</b> (35 % lägre + 15 % högre 9-håls-spelhcp)</div>`;
+  let html=`<div class="holemeta" style="margin-bottom:8px">${esc(pairName(pairId))} · ${emCourse().name}, gul tee · Scramble-hcp <b>${res.hcp===null?"?":res.hcp}</b> (35 % lägre + 15 % högre 9-håls-spelhcp)</div>`;
   if(locked)html+=`<div class="notis"><b>Inlämnad ✓</b> Ronden är låst. Hittat en typo? Be tävlingsledningen låsa upp under Admin.</div>`;
-  ENVI_RANKED.forEach((h,i)=>{html+=holeRow("em",pairId,h.n,h.par,h.idx,shotsOnHole(res.hcp,h.rank9,9),row["h"+h.n],res.holes[i],locked);});
+  emRanked().forEach((h,i)=>{html+=holeRow("em",pairId,h.n,h.par,h.idx,shotsOnHole(res.hcp,h.rank9,9),row["h"+h.n],res.holes[i],locked);});
   html+=`<div class="sumrow"><span>Summa Stableford</span><span class="tot">${res.sum} p</span></div>`;
   if(!locked&&res.done===9)html+=`<div style="margin-top:10px"><button class="btn" onclick="lamnaIn('em','${pairId}')">Lämna in ronden</button></div>`;
   $("#scoregrid").innerHTML=html;
@@ -674,7 +708,7 @@ function bump(pass,unit,holeNo,d){
   if(S.settings.final==="1"){saga("Tävlingen är avslutad och resultatet fastställt. Tävlingsledningen kan återöppna under Admin.");return;}
   if(isLocked(pass,unit)){saga("Ronden är inlämnad och låst. Be tävlingsledningen låsa upp om något behöver rättas.");return;}
   const branch=pass==="fm"?"morning":"afternoon";
-  const course=pass==="fm"?fmCourse():ENVI;
+  const course=pass==="fm"?fmCourse():emCourse();
   const cur=((S[branch][unit]||{})["h"+holeNo]);
   let next;
   if(cur===undefined||cur===null||cur===""){next=d>0?(course.holes.find(x=>x.n===holeNo)||{par:4}).par:null;}
@@ -728,6 +762,7 @@ function statusText(ranked){
 }
 function renderStallning(){
   document.getElementById("fm-rubrik").textContent="Förmiddag — Bästboll, "+fmCourse().name+" (18 hål)";
+  document.getElementById("em-rubrik").textContent="Eftermiddag — Scramble, "+emCourse().name+" (9 hål)";
   const teams=TEAMS();
   const st=standings();
   const status=statusText(st.ranked);
@@ -843,7 +878,7 @@ function computeAch(){
   }
   for(const id in S.pairs){
     const row=S.afternoon[id]||{};
-    ENVI.holes.forEach(hh=>{
+    emCourse().holes.forEach(hh=>{
       const g=row["h"+hh.n];if(g===undefined||g===null||g==="")return;
       const gn=Number(g);if(gn===0)return;
       if(gn===1)add("hio",pairName(id));
@@ -852,6 +887,7 @@ function computeAch(){
     });
   }
   $("#set-numteams").value=String(TEAMS().length);
+  if(document.activeElement!==document.getElementById("set-emcourse"))$("#set-emcourse").value=S.settings.emCourse==="envi"?"envi":"sker9";
   if(!document.activeElement.closest||!document.activeElement.closest("#bolltider")){
     const bollar=computeBolls();
     $("#bolltider").innerHTML=bollar.length?bollar.map(g=>
@@ -881,7 +917,7 @@ function renderHighlights(){
       par=hh.par;gross=(S.morning[e.unit]||{})["h"+e.h];namn=p.name;
     }else{
       if(!S.pairs[e.unit])return;
-      const hh=ENVI.holes.find(x=>x.n===e.h);if(!hh)return;
+      const hh=emCourse().holes.find(x=>x.n===e.h);if(!hh)return;
       par=hh.par;gross=(S.afternoon[e.unit]||{})["h"+e.h];namn=pairName(e.unit);
     }
     if(gross===undefined||gross===null||gross==="")return;
@@ -923,7 +959,11 @@ function renderBanan(){
     <div class="top"><span class="nr">${h.n}</span><span class="parline">Par ${h.par} · Index ${h.idx}${!test&&SIDE_FM[h.n]?` · <span style="color:var(--score)">${SIDE_FM[h.n]}</span>`:""}</span></div>
     <div class="teebar"><span class="tee gul"><i></i>Gul ${h.m[0]} m</span></div>
   </div>`).join("");
-  $("#banlista-envi").innerHTML=ENVI.holes.map(h=>`<div class="holecard">
+  $("#ban-em-rubrik").textContent="Eftermiddag — "+emCourse().name;
+  $("#ban-em-text").innerHTML=S.settings.emCourse==="envi"
+    ?`Par 31 över 9 hål: sex par 3, två par 4 och en par 5. Öppen hedbana med små greener — precision slår kraft här. Mer info i <a href="https://skerikegk.se/spela/9-halsbanan/" target="_blank" rel="noopener">klubbens banguide</a>.`
+    :`Första nio på Skerikes 18-hålsbana, par 35. Öppen hedbana med kullar, diken och gott om vatten — och krypvensgreener i toppklass. Mer info i <a href="https://skerikegk.se/spela/18-halsbanan/" target="_blank" rel="noopener">klubbens banguide</a>.`;
+  $("#banlista-envi").innerHTML=emCourse().holes.map(h=>`<div class="holecard">
     <div class="top"><span class="nr">${h.n}</span><span class="parline">Par ${h.par} · Index ${h.idx}</span></div>
     <div class="teebar"><span class="tee gul"><i></i>Gul ${h.m[0]} m</span></div>
     ${h.tips?`<div class="tips">${esc(h.tips)}</div>`:""}
@@ -939,12 +979,13 @@ function renderInfo(){
   $("#infolista").innerHTML=
     faq("Schema & hålltider",schemaHtml)+
     faq("Hur funkar lagtävlingen?",
-      `<b>Förmiddag — Bästboll Stableford, 18 hål på Västerås GK.</b>\nAlla spelar sin egen boll med fullt spelhandicap. På varje hål räknas lagets högsta Stableford-poäng som lagets poäng.\n\n<b>Eftermiddag — Scramble, 9 hål på EnviLoopen (Skerike GK).</b>\nLag om två eller tre: alla slår ut, ni väljer bästa bollen, alla spelar därifrån — hela vägen i hål. Handicap efter lagstorlek: par = 35 % av det lägre + 15 % av det högre; trio = 20 % + 15 % + 10 % av lägsta/mellersta/högsta 9-håls-spelhandicap. Vid udda lagstorlek bildas en trio så att ingen står utanför. Poängbogey även här.\n\n<b>Totalt:</b> förmiddag + eftermiddag. Flest poäng vinner.\n\n<b>Vid lika:</b> bäst på sista 9 hålen av förmiddagens bästboll, sedan sista 6, sista 3, sista hålet. Appen räknar detta automatiskt.`)+
+      `<b>Förmiddag — Bästboll Stableford, 18 hål på Västerås GK.</b>\nAlla spelar sin egen boll med fullt spelhandicap. På varje hål räknas lagets högsta Stableford-poäng som lagets poäng.\n\n<b>Eftermiddag — Scramble, 9 hål på ${emCourse().name}.</b>\nLag om två eller tre: alla slår ut, ni väljer bästa bollen, alla spelar därifrån — hela vägen i hål. Handicap efter lagstorlek: par = 35 % av det lägre + 15 % av det högre; trio = 20 % + 15 % + 10 % av lägsta/mellersta/högsta 9-håls-spelhandicap. Vid udda lagstorlek bildas en trio så att ingen står utanför. Poängbogey även här.\n\n<b>Totalt:</b> förmiddag + eftermiddag. Flest poäng vinner.\n\n<b>Vid lika:</b> bäst på sista 9 hålen av förmiddagens bästboll, sedan sista 6, sista 3, sista hålet. Appen räknar detta automatiskt.`)+
     faq("Sidotävlingar",esc(st.sidor))+
+    faq("Kostnader",esc(st.kostnader))+
     faq("Hur för jag score?",
       `Gå till <b>Score</b>, välj pass och dig själv (eller ert par på eftermiddagen), och stega in antal <b>bruttoslag</b> per hål. Appen räknar om till Stableford med rätt spelhandicap för rätt bana.\n\nPlockat upp bollen? Tryck minus tills det står <b>–</b> (streck) så registreras 0 poäng.\n\nPrickarna under par/index visar hur många slag du får på hålet.`)+
     faq("Spelhandicap & slope",
-      `Alla spelar från gul tee (herrklass). Spelhcp räknas per bana enligt WHS: exakt hcp × slope/113 + (CR − par), avrundat.\n\n<b>Västerås GK</b> — par 70, gul tee ${R.vgk.cr.toFixed(1)}/${R.vgk.sl}. Fullt spelhandicap på förmiddagens 18 hål.\n\n<b>EnviLoopen</b> — par 31. För 9-hålsrundan används halva exakta handicappet mot banans 9-hålsvärden (klubbens tabell ${R.envi.cr.toFixed(1)}/${R.envi.sl} gäller 2 varv; appen halverar CR:t åt dig).\n\nExakt hcp anmäls senast <b>den 20 september</b>.`)+
+      `Alla spelar från gul tee (herrklass). Spelhcp räknas per bana enligt WHS: exakt hcp × slope/113 + (CR − par), avrundat.\n\n<b>Västerås GK</b> — par 70, gul tee ${R.vgk.cr.toFixed(1)}/${R.vgk.sl}. Fullt spelhandicap på förmiddagens 18 hål.\n\n<b>${emCourse().name}</b> — par ${emCourse().par}. För 9-hålsrundan används halva exakta handicappet mot halva banans CR (${S.settings.emCourse==="envi"?R.envi.cr.toFixed(1)+"/"+R.envi.sl+", angivet för 2 varv":R.sker9.cr.toFixed(1)+"/"+R.sker9.sl+", angivet för 18 hål"} — appen halverar åt dig).\n\nExakt hcp anmäls senast <b>den 20 september</b>.`)+
     faq("Söndagen",
       `Frivilligt extravarv, 18 hål, valfritt format. Räknas inte till lagtävlingen och inget pris delas ut — bara för den som orkar och vill spela mer.`)+
     faq("Praktiskt",esc(st.ovrigt)+
@@ -999,6 +1040,9 @@ function renderAdmin(){
       `<div class="ratgrid"><span class="lbl">VGK Gul</span>
         <input type="number" step="0.1" inputmode="decimal" placeholder="CR" value="${R.vgk.cr}" data-rt="vgk.cr">
         <input type="number" step="1" inputmode="numeric" placeholder="Slope" value="${R.vgk.sl}" data-rt="vgk.sl"></div>
+      <div class="ratgrid"><span class="lbl">Sker 1–9</span>
+        <input type="number" step="0.1" inputmode="decimal" placeholder="CR (18 hål)" value="${R.sker9.cr}" data-rt="sker9.cr">
+        <input type="number" step="1" inputmode="numeric" placeholder="Slope" value="${R.sker9.sl}" data-rt="sker9.sl"></div>
       <div class="ratgrid"><span class="lbl">Envi Gul</span>
         <input type="number" step="0.1" inputmode="decimal" placeholder="CR (2 varv)" value="${R.envi.cr}" data-rt="envi.cr">
         <input type="number" step="1" inputmode="numeric" placeholder="Slope" value="${R.envi.sl}" data-rt="envi.sl"></div>`;
@@ -1021,6 +1065,7 @@ function renderAdmin(){
   if(!document.activeElement||document.activeElement.tagName!=="TEXTAREA"){
     $("#set-schema").value=S.settings.schema;
     $("#set-sidor").value=S.settings.sidor;
+    $("#set-kostnader").value=S.settings.kostnader;
     $("#set-ovrigt").value=S.settings.ovrigt;
   }
 }
@@ -1088,7 +1133,7 @@ document.getElementById("btn-mockscore").onclick=async()=>{
     if(!mem.length||!mem.every(x=>S.players[x]&&S.players[x].mock))return;
     if(isLocked("em",pid))return;
     const c=pairHcp(pr);if(c===null)return;
-    ENVI_RANKED.forEach(hh=>{
+    emRanked().forEach(hh=>{
       const g=Math.max(1,hh.par+shotsOnHole(c,hh.rank9,9)+dra(wEm));
       upd[`afternoon/${pid}/h${hh.n}`]=g;
       if(g<=hh.par-1)upd[`events/mock${Date.now().toString(36)}e_${++evN}`]={t:Date.now()-Math.floor(Math.random()*10800000),pass:"em",unit:pid,h:hh.n};
@@ -1145,21 +1190,33 @@ document.getElementById("btn-snake").onclick=()=>{
   });
   dbUpdate(upd);
 };
+document.getElementById("set-emcourse").onchange=async e=>{
+  const ny=e.target.value;
+  if(ny===S.settings.emCourse)return;
+  const namn=ny==="envi"?"EnviLoopen":"Skerike GK hål 1–9";
+  if(!await fraga(`Byta eftermiddagsbana till ${namn}? Eftermiddagens scores, lås och händelser nollställs.`)){
+    e.target.value=S.settings.emCourse;render();return;
+  }
+  const upd={"settings/emCourse":ny,afternoon:null,"locks/em":null};
+  Object.keys(S.events||{}).forEach(id=>{if(S.events[id]&&S.events[id].pass==="em")upd["events/"+id]=null;});
+  dbUpdate(upd);
+  saga("Eftermiddagsbanan är nu "+namn+". Spelhandicap och banguide uppdaterade överallt.");
+};
 document.getElementById("btn-saveratings").onclick=()=>{
   const R=JSON.parse(JSON.stringify(S.settings.ratings));
   document.querySelectorAll("#ratinglista input[data-rt]").forEach(inp=>{
     const [c,f]=inp.dataset.rt.split(".");
     R[c][f]=inp.value===""?null:Number(inp.value);
   });
-  for(const c of ["vgk","envi"]){
+  for(const c of ["vgk","envi","sker9"]){
     const r=R[c];
-    if(r.cr==null||r.sl==null||isNaN(r.cr)||isNaN(r.sl)){saga("Både CR och slope måste vara ifyllda för "+(c==="vgk"?"Västerås GK":"EnviLoopen")+".");return;}
+    if(r.cr==null||r.sl==null||isNaN(r.cr)||isNaN(r.sl)){saga("Både CR och slope måste vara ifyllda för "+(c==="vgk"?"Västerås GK":(c==="envi"?"EnviLoopen":"Skerike 1–9"))+".");return;}
   }
   dbSet("settings/ratings",R);
   saga("Banvärdena är sparade. Alla spelhandicap räknas om direkt.");
 };
 document.getElementById("btn-savesettings").onclick=()=>{
-  dbUpdate({"settings/schema":$("#set-schema").value,"settings/sidor":$("#set-sidor").value,"settings/ovrigt":$("#set-ovrigt").value});
+  dbUpdate({"settings/schema":$("#set-schema").value,"settings/sidor":$("#set-sidor").value,"settings/kostnader":$("#set-kostnader").value,"settings/ovrigt":$("#set-ovrigt").value});
   saga("Texterna är sparade.");
 };
 document.getElementById("btn-final").onclick=async()=>{
