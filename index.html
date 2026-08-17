@@ -140,7 +140,7 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
   <div class="wrap">
     <div class="brand">
       <h1>Ringwall <span class="open">Open</span></h1>
-      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.3</div>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.4</div>
     </div>
   </div>
 </header>
@@ -329,7 +329,7 @@ const FIREBASE_CONFIG = {
   appId: "1:161650064745:web:d27f95a34e752a53fd51f8"
 };
 const DB_ROOT = "ringwall2026";
-const APP_VERSION = "20";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
+const APP_VERSION = "22";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
 
 /* ================= BANDATA =================
    Västerås GK 18-hålsbanan, par 70. Hål (par/index) enligt klubbens
@@ -585,7 +585,7 @@ function renderScore(){
      <button class="chip ${ui.pass==='em'?'act':''}" onclick="setPass('em')">EM · Scramble · EnviLoopen</button>`;
   document.getElementById("vemrad").innerHTML = meName()
     ? `Den här telefonen: <b>${esc(meName())}</b> <button class="chip" style="padding:3px 10px;font-size:.72rem;margin-left:4px" onclick="bytPerson()">byt person</button><br>Föra score åt någon annan utan att byta? Tryck bara på namnet nedan och bekräfta i rutan.`
-    : `Välj dig själv nedan så minns telefonen vem du är.`;
+    : (Object.keys(S.players).length ? `Välj dig själv nedan så minns telefonen vem du är.` : "");
   const ev=$("#enhetsval");
   if(ui.pass==="fm"){
     const ids=Object.keys(S.players);
