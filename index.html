@@ -129,18 +129,40 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
 #modal .ruta p{font-size:.92rem;line-height:1.55;white-space:pre-line;margin-bottom:16px}
 #modal .knappar{display:flex;gap:8px;justify-content:flex-end}
 #toast{display:none;position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:99;background:var(--gran);border:1px solid var(--score);border-radius:12px;padding:12px 14px;font-size:.86rem;line-height:1.45;box-shadow:0 6px 24px rgba(0,0,0,.4);max-width:600px;margin:0 auto}
+/* Välkomstsplash — visas en gång per telefon */
+#splash{position:fixed;inset:0;z-index:200;background:var(--skog);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#splash .scen{position:relative;width:150px;height:118px}
+#splash .stang{position:absolute;left:88px;bottom:16px;width:4px;height:0;background:var(--krita);border-radius:2px;animation:sp-res .7s .2s forwards ease-out}
+@keyframes sp-res{to{height:80px}}
+#splash .flagga{position:absolute;left:92px;bottom:78px;width:0;height:0;border-top:15px solid transparent;border-bottom:2px solid transparent;border-left:36px solid var(--flagga);opacity:0;transform-origin:left center;animation:sp-vaja 1.4s .9s forwards ease-in-out}
+@keyframes sp-vaja{0%{opacity:0;transform:scaleX(.15)}35%{opacity:1;transform:scaleX(1.1)}60%{transform:scaleX(.93)}100%{opacity:1;transform:scaleX(1)}}
+#splash .kopp{position:absolute;left:76px;bottom:10px;width:28px;height:8px;background:#0B1A11;border-radius:50%}
+#splash .boll{position:absolute;left:-34px;bottom:12px;width:15px;height:15px;border-radius:50%;background:var(--krita);animation:sp-rulla 1s .5s forwards cubic-bezier(.2,.7,.3,1)}
+@keyframes sp-rulla{to{left:58px;transform:rotate(720deg)}}
+#splash h1{font-variation-settings:'wdth' 72,'wght' 850;text-transform:uppercase;font-size:1.9rem;letter-spacing:.02em;opacity:0;animation:sp-fade .6s 1.5s forwards}
+#splash h1 .open{color:var(--score)}
+#splash .tag{color:var(--sand);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;opacity:0;animation:sp-fade .6s 1.8s forwards}
+@keyframes sp-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#splash.ut{animation:sp-ut .45s forwards}
+@keyframes sp-ut{to{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce){#splash{display:none}}
 #adminlock{max-width:360px;margin:30px auto;text-align:center}
 #adminlock svg{width:38px;height:38px;stroke:var(--score);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-bottom:10px}
 </style>
 </head>
 <body>
 
+<div id="splash">
+  <div class="scen"><span class="stang"></span><span class="flagga"></span><span class="kopp"></span><span class="boll"></span></div>
+  <h1>Ringwall <span class="open">Open</span></h1>
+  <div class="tag">2026 · VGK &amp; Skerike</div>
+</div>
 <div id="statusskydd"></div>
 <header>
   <div class="wrap">
     <div class="brand">
       <h1>Ringwall <span class="open">Open</span></h1>
-      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.6</div>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.8.3</div>
     </div>
   </div>
 </header>
@@ -339,7 +361,7 @@ const FIREBASE_CONFIG = {
   appId: "1:161650064745:web:d27f95a34e752a53fd51f8"
 };
 const DB_ROOT = "ringwall2026";
-const APP_VERSION = "24";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
+const APP_VERSION = "26";   /* höjs vid datamodellsändringar → gammal lokal cache rensas */
 
 /* ================= BANDATA =================
    Västerås GK 18-hålsbanan, par 70. Hål (par/index) enligt klubbens
@@ -437,6 +459,18 @@ const DEFAULT_SETTINGS = {
   ovrigt:"Bekräfta din exakta hcp senast den 20 september så att lagdragning och scramble-hcp stämmer från start.\nRapportera gärna hålresultat löpande i chattgruppen.\nKörtid Västerås GK → Skerike GK är ca 15 minuter."
 };
 
+/* ---- Animationer: splash, firanden, tickande siffror ---- */
+const REDUCED=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+(function(){
+  const sp=document.getElementById("splash");
+  if(!sp)return;
+  let seen=null;try{seen=localStorage.getItem("ro_splash");}catch(e){}
+  if(seen||REDUCED){sp.remove();return;}
+  try{localStorage.setItem("ro_splash","1");}catch(e){}
+  const bort=()=>{sp.classList.add("ut");setTimeout(()=>sp.remove(),500);};
+  sp.addEventListener("click",bort);
+  setTimeout(bort,3500);
+})();
 /* ---- Egna dialoger: iOS helskärmsläge blockerar systemets bekräftelserutor ---- */
 let _fragaResolve=null;
 function fraga(msg){
