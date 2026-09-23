@@ -193,7 +193,7 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
   <div class="wrap">
     <div class="brand">
       <h1>Ringwall <span class="open">Open</span></h1>
-      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v2.0</div>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v2.1</div>
     </div>
   </div>
 </header>
@@ -314,6 +314,12 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
         <label class="fld">Övrig praktisk info</label>
         <textarea id="set-ovrigt"></textarea>
         <div style="margin-top:12px"><button class="btn" id="btn-savesettings">Spara texter</button></div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Kod för att föra score</h3>
+        <p class="hint" style="margin-top:0">Skicka koden till gänget tillsammans med länken. Alla kan se ställningen utan kod. Byter du kod måste alla ange den nya, bra om den hamnat på villovägar. Som inloggad admin kan du alltid föra score.</p>
+        <input type="text" id="newscorekod" placeholder="Ny kod" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+        <div style="margin-top:10px"><button class="btn ghost" id="btn-setscorekod">Byt kod</button></div>
       </div>
       <div class="panel">
         <h3 style="margin-top:0">Admin-lösenord</h3>
@@ -475,8 +481,10 @@ const ENVI = {name:"EnviLoopen", par:31, tees:["gul","rod"], holes:[
 const DEFAULT_RATINGS = {vgk:{cr:68.2,sl:121}, envi:{cr:59.1,sl:98}, sker9:{cr:71.5,sl:122}};
 /* djb2-hash för admin-lösenordet (klartexten står medvetet inte i koden). */
 const DEFAULT_PW_HASH = "h73bb36cf_12";
+const DEFAULT_SCORE_HASH = "hf424d9d4_6";   /* standardkod för att föra score — byts under Admin */
 const DEFAULT_SETTINGS = {
   adminHash:null,
+  scoreHash:null,
   testmode:"0",
   awards:{drive:"",narmast:""},
   final:"0",
@@ -700,6 +708,22 @@ function renderScore(){
     `<div class="panel" style="padding:10px 14px">${bollar.map(g=>{
       const tid=S.settings["bolltid"+g.nr]||"";
       return `<div style="font-size:.82rem;padding:4px 0"><b class="mono" style="color:${TEAMFARG[g.lag]}">Boll ${g.nr}${tid?" · "+esc(tid):""}</b> — Lag ${g.lag}: ${g.ids.map(i=>esc(S.players[i].name)).join(", ")}</div>`;}).join("")}</div>`:"";
+  if(!scoreUpplast()){
+    $("#passval").innerHTML="";$("#enhetsval").innerHTML="";$("#vemrad").innerHTML="";
+    if(!document.getElementById("scorekod")){
+      $("#scoregrid").innerHTML=`<div class="tomt" style="padding:22px 6px">
+        <b style="color:var(--krita);font-size:1rem">Ange koden för att föra score</b><br>
+        Koden finns i gruppchatten. Telefonen kommer ihåg den, så du behöver bara skriva den en gång.
+        <input id="scorekod" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"
+          placeholder="Kod" style="margin-top:14px;text-align:center"
+          onkeydown="if(event.key==='Enter')provaKod()">
+        <div id="kodfel" style="display:none;color:var(--flagga);margin-top:8px">Fel kod. Kolla gruppchatten.</div>
+        <div style="margin-top:12px"><button class="btn" onclick="provaKod()">Lås upp</button></div>
+        <div style="margin-top:14px;font-size:.8rem">Ställningen, banguiden och infon går att se utan kod.</div>
+      </div>`;
+    }
+    return;
+  }
   $("#passval").innerHTML=
     `<button class="chip ${ui.pass==='fm'?'act':''}" onclick="setPass('fm')">FM · Bästboll · ${fmCourse().name}</button>
      <button class="chip ${ui.pass==='em'?'act':''}" onclick="setPass('em')">EM · Scramble · ${emCourse().name}</button>`;
@@ -730,6 +754,7 @@ function bytPerson(){
   saga("Identiteten är rensad — tryck på ditt namn i listan så minns telefonen dig i stället.");
 }
 async function setUnit(u){
+  if(!scoreUpplast()){saga("Ange koden under Score för att föra score.");return;}
   if(ME&&!S.players[ME])setMe(null);                      /* borttagen spelare */
   if(ui.pass==="fm"){
     const p=S.players[u];
@@ -785,12 +810,14 @@ function holeRow(pass,unit,holeNo,par,idx,shots,val,pts,locked){
   </div>`;
 }
 async function lamnaIn(pass,unit){
+  if(!scoreUpplast()){saga("Ange koden under Score för att föra score.");return;}
   if(S.settings.final==="1"){saga("Tävlingen är avslutad.");return;}
   const namn=pass==="fm"?(S.players[unit]||{}).name:pairName(unit);
   if(!await fraga(`Lämna in ${namn}s rond? Scoren låses och kan bara låsas upp av tävlingsledningen.`))return;
   dbSet(`locks/${pass}/${unit}`,true);
 }
 function bump(pass,unit,holeNo,d){
+  if(!scoreUpplast()){saga("Ange koden under Score för att föra score.");return;}
   if(S.settings.final==="1"){saga("Tävlingen är avslutad och resultatet fastställt. Tävlingsledningen kan återöppna under Admin.");return;}
   if(isLocked(pass,unit)){saga("Ronden är inlämnad och låst. Be tävlingsledningen låsa upp om något behöver rättas.");return;}
   const branch=pass==="fm"?"morning":"afternoon";
@@ -1069,7 +1096,7 @@ function renderInfo(){
     faq("Sidotävlingar",esc(st.sidor))+
     faq("Kostnader",esc(st.kostnader))+
     faq("Hur för jag score?",
-      `Gå till <b>Score</b>, välj pass och dig själv (eller ert par på eftermiddagen), och stega in antal <b>bruttoslag</b> per hål. Appen räknar om till Stableford med rätt spelhandicap för rätt bana.\n\nPlockat upp bollen? Tryck minus tills det står <b>–</b> (streck) så registreras 0 poäng.\n\nPrickarna under par/index visar hur många slag du får på hålet.`)+
+      `Första gången anger du koden från gruppchatten, sedan minns telefonen den.\n\nGå till <b>Score</b>, välj pass och dig själv (eller ert par på eftermiddagen), och stega in antal <b>bruttoslag</b> per hål. Appen räknar om till Stableford med rätt spelhandicap för rätt bana.\n\nPlockat upp bollen? Tryck minus tills det står <b>–</b> (streck) så registreras 0 poäng.\n\nPrickarna under par/index visar hur många slag du får på hålet.`)+
     faq("Spelhandicap & slope",
       `Alla spelar från gul tee (herrklass). Spelhcp räknas per bana enligt WHS: exakt hcp × slope/113 + (CR − par), avrundat.\n\n<b>Västerås GK</b> — par 70, gul tee ${R.vgk.cr.toFixed(1)}/${R.vgk.sl}. Fullt spelhandicap på förmiddagens 18 hål.\n\n<b>${emCourse().name}</b> — par ${emCourse().par}. För 9-hålsrundan används halva exakta handicappet mot halva banans CR (${S.settings.emCourse==="envi"?R.envi.cr.toFixed(1)+"/"+R.envi.sl+", angivet för 2 varv":R.sker9.cr.toFixed(1)+"/"+R.sker9.sl+", angivet för 18 hål"} — appen halverar åt dig).\n\nExakt hcp anmäls senast <b>den 20 september</b>.`)+
     faq("Söndagen",
@@ -1081,6 +1108,24 @@ function renderInfo(){
 /* ---- Admin ---- */
 let adminOpen = sessionStorage.getItem("ro_admin")==="1";
 function currentHash(){return S.settings.adminHash||DEFAULT_PW_HASH;}
+function scoreHashNu(){return S.settings.scoreHash||DEFAULT_SCORE_HASH;}
+function scoreUpplast(){
+  if(adminOpen)return true;
+  let k=null;try{k=localStorage.getItem("ro_kod");}catch(e){}
+  return k===scoreHashNu();
+}
+function provaKod(){
+  const f=document.getElementById("scorekod");if(!f)return;
+  const v=f.value.trim().toLowerCase();
+  if(v&&pwHash(v)===scoreHashNu()){
+    try{localStorage.setItem("ro_kod",scoreHashNu());}catch(e){}
+    render();
+    saga("Upplåst. Den här telefonen kan nu föra score.");
+  }else{
+    const fel=document.getElementById("kodfel");if(fel)fel.style.display="block";
+    f.select();
+  }
+}
 function renderAdmin(){
   $("#adminlock").style.display=adminOpen?"none":"block";
   $("#adminbody").style.display=adminOpen?"block":"none";
@@ -1174,6 +1219,16 @@ document.getElementById("btn-unlock").onclick=()=>{
   }else{$("#pwfel").style.display="block";}
 };
 document.getElementById("adminpw").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("btn-unlock").click();});
+document.getElementById("btn-setscorekod").onclick=async()=>{
+  const v=$("#newscorekod").value.trim().toLowerCase();
+  if(v.length<3){saga("Koden behöver minst 3 tecken.");return;}
+  if(!await fraga(`Byta kod till "${v}"? Alla telefoner behöver ange den nya koden innan de kan föra score igen.`))return;
+  const nh=pwHash(v);
+  dbSet("settings/scoreHash",nh);
+  try{localStorage.setItem("ro_kod",nh);}catch(e){}
+  $("#newscorekod").value="";
+  saga(`Koden är nu "${v}". Skicka den till gänget.`);
+};
 document.getElementById("btn-setpw").onclick=()=>{
   const v=$("#newpw").value.trim();
   if(v.length<4){saga("Minst 4 tecken.");return;}
