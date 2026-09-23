@@ -130,7 +130,29 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
 #modal .knappar{display:flex;gap:8px;justify-content:flex-end}
 #toast{display:none;position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:99;background:var(--gran);border:1px solid var(--score);border-radius:12px;padding:12px 14px;font-size:.86rem;line-height:1.45;box-shadow:0 6px 24px rgba(0,0,0,.4);max-width:600px;margin:0 auto}
 /* Välkomstsplash — visas en gång per telefon */
-#splash{position:fixed;inset:0;z-index:200;background:var(--skog);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#splash{position:fixed;inset:0;z-index:200;background:var(--skog);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#splash.kor{display:flex}
+/* Introfilm — första besöket. Trycket på porten låser upp ljudet. */
+#intro{position:fixed;inset:0;z-index:210;background:var(--skog);display:flex;align-items:center;justify-content:center;transition:opacity .45s ease}
+#intro.ut{opacity:0;pointer-events:none}
+#intro-start{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:18px;-webkit-tap-highlight-color:transparent}
+#intro-start .bollknapp{position:relative;width:96px;height:96px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#fff 0%,var(--krita) 42%,#cfcdc2 100%);
+  box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 -6px 12px rgba(0,0,0,.12);animation:intro-andas 2.4s ease-in-out infinite}
+#intro-start .bollknapp::before{content:"";position:absolute;inset:0;border-radius:50%;opacity:.55;
+  background-image:radial-gradient(circle,rgba(0,0,0,.16) 1.6px,transparent 2.2px);background-size:9px 9px}
+#intro-start .bollknapp::after{content:"";position:absolute;left:39px;top:31px;border-left:26px solid var(--skog);border-top:17px solid transparent;border-bottom:17px solid transparent}
+#intro-start:active .bollknapp{transform:scale(.93)}
+@keyframes intro-andas{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+#intro-start .txt{font-weight:700;font-size:1.05rem;color:var(--krita)}
+#intro-start .sub{font-size:.8rem;color:var(--sand);margin-top:-10px}
+#intro-film{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:none}
+#intro.spelar #intro-film{display:block}
+#intro.spelar #intro-start{display:none}
+#intro-skip{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);z-index:2;display:none;
+  background:rgba(0,0,0,.45);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:8px 14px;font:inherit;font-size:.82rem;cursor:pointer}
+#intro.spelar #intro-skip{display:block}
+@media (prefers-reduced-motion:reduce){#intro-start .bollknapp{animation:none}}
 #splash .scen{position:relative;width:150px;height:118px}
 #splash .stang{position:absolute;left:88px;bottom:16px;width:4px;height:0;background:var(--krita);border-radius:2px;animation:sp-res .7s .2s forwards ease-out}
 @keyframes sp-res{to{height:80px}}
@@ -152,6 +174,15 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
 </head>
 <body>
 
+<div id="intro">
+  <button id="intro-start" type="button" aria-label="Starta introfilmen">
+    <span class="bollknapp"></span>
+    <span class="txt">Tryck för att starta</span>
+    <span class="sub">Med ljud</span>
+  </button>
+  <video id="intro-film" src="intro.mp4" playsinline webkit-playsinline preload="auto"></video>
+  <button id="intro-skip" type="button">Hoppa över</button>
+</div>
 <div id="splash">
   <div class="scen"><span class="stang"></span><span class="flagga"></span><span class="kopp"></span><span class="boll"></span></div>
   <h1>Ringwall <span class="open">Open</span></h1>
@@ -162,7 +193,7 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
   <div class="wrap">
     <div class="brand">
       <h1>Ringwall <span class="open">Open</span></h1>
-      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v1.8.3</div>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v2.0</div>
     </div>
   </div>
 </header>
@@ -463,13 +494,34 @@ const DEFAULT_SETTINGS = {
 const REDUCED=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 (function(){
   const sp=document.getElementById("splash");
-  if(!sp)return;
+  const intro=document.getElementById("intro");
+  const film=document.getElementById("intro-film");
   let seen=null;try{seen=localStorage.getItem("ro_splash");}catch(e){}
-  if(seen||REDUCED){sp.remove();return;}
-  try{localStorage.setItem("ro_splash","1");}catch(e){}
-  const bort=()=>{sp.classList.add("ut");setTimeout(()=>sp.remove(),500);};
-  sp.addEventListener("click",bort);
-  setTimeout(bort,3500);
+  if(seen){if(sp)sp.remove();if(intro)intro.remove();return;}
+  let scenStartad=false;
+  const visaScen=()=>{
+    if(scenStartad)return;scenStartad=true;
+    try{localStorage.setItem("ro_splash","1");}catch(e){}
+    try{film.pause();}catch(e){}
+    if(intro){intro.classList.add("ut");setTimeout(()=>intro.remove(),500);}
+    if(!sp)return;
+    if(REDUCED){sp.remove();return;}
+    sp.classList.add("kor");            /* animationerna startar först här */
+    const bort=()=>{sp.classList.add("ut");setTimeout(()=>sp.remove(),500);};
+    sp.addEventListener("click",bort);
+    setTimeout(bort,3500);
+  };
+  if(!intro||!film){visaScen();return;}
+  /* Saknas filmen eller går den inte att spela: hoppa direkt till scenen */
+  film.addEventListener("error",()=>visaScen());
+  if(film.error){visaScen();return;}
+  film.addEventListener("ended",()=>visaScen());
+  document.getElementById("intro-skip").addEventListener("click",()=>visaScen());
+  document.getElementById("intro-start").addEventListener("click",()=>{
+    intro.classList.add("spelar");
+    const p=film.play();
+    if(p&&p.catch)p.catch(()=>visaScen());
+  });
 })();
 /* ---- Egna dialoger: iOS helskärmsläge blockerar systemets bekräftelserutor ---- */
 let _fragaResolve=null;
