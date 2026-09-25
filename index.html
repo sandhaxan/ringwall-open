@@ -193,7 +193,7 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
   <div class="wrap">
     <div class="brand">
       <h1>Ringwall <span class="open">Open</span></h1>
-      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v2.1</div>
+      <div class="plats"><span class="syncdot" id="syncdot"></span>VGK &amp; Skerike · v2.2</div>
     </div>
   </div>
 </header>
@@ -257,6 +257,10 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
         <select id="set-numteams" onchange="dbSet('settings/numTeams',this.value)">
           <option value="2">2 lag</option><option value="3">3 lag</option><option value="4">4 lag</option>
         </select>
+        <label class="fld">Kompensation vid ojämna lag (poäng per saknad spelare, förmiddagen)</label>
+        <input type="number" id="set-fmkomp" min="0" max="10" step="1" inputmode="numeric" style="max-width:110px"
+          onchange="dbSet('settings/fmKomp',String(Math.max(0,Math.min(10,Math.round(Number(this.value)||0)))))">
+        <p class="hint" style="margin:4px 0 0">Standard 3. Gäller bara när lagen är olika stora. 0 stänger av.</p>
         <div style="height:10px"></div>
         <div id="spelarlista"></div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -282,7 +286,7 @@ label.fld{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppe
       </div>
       <div class="panel">
         <h3 style="margin-top:0">Scramble-lag (eftermiddag)</h3>
-        <p class="hint" style="margin-top:0">Lag om två (35 % + 15 %) eller tre (20 % + 15 % + 10 % av lägsta/mellersta/högsta 9-håls-spelhcp). Autobygget gör par vid jämn lagstorlek och en trio vid udda — ingen står utanför.</p>
+        <p class="hint" style="margin-top:0">Lag om två (35 % + 15 %) eller tre (20 % + 15 % + 10 % av lägsta/mellersta/högsta 9-håls-spelhcp). Autobygget gör par vid jämn lagstorlek och en trio vid udda. Är lagen olika stora med tre och fyra spelare spelar varje lag som ett enda scramble-lag: fyrmanna (25 % + 20 % + 15 % + 10 %) mot trio.</p>
         <div id="parlista"></div>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
           <button class="btn ghost" id="btn-nyttpar">+ Nytt scramble-lag</button>
@@ -485,6 +489,7 @@ const DEFAULT_SCORE_HASH = "hf424d9d4_6";   /* standardkod för att föra score 
 const DEFAULT_SETTINGS = {
   adminHash:null,
   scoreHash:null,
+  fmKomp:"3",
   testmode:"0",
   awards:{drive:"",narmast:""},
   final:"0",
@@ -670,7 +675,7 @@ function teamMorning(team){
 }
 /* Aktiv EM-banas index omrankas 1–9 för slagfördelning — se emRanked() */
 function pairMembers(pair){
-  return [pair.p1,pair.p2,pair.p3].filter(id=>id&&S.players[id]).map(id=>S.players[id]);
+  return [pair.p1,pair.p2,pair.p3,pair.p4].filter(id=>id&&S.players[id]).map(id=>S.players[id]);
 }
 function pairHcp(pair){
   const mem=pairMembers(pair);
@@ -679,7 +684,8 @@ function pairHcp(pair){
   if(s.some(x=>x===null))return null;
   s.sort((a,b)=>a-b);                    /* spelhcp är redan för 9 hål */
   if(mem.length===2)return Math.round(0.35*s[0]+0.15*s[1]);
-  return Math.round(0.20*s[0]+0.15*s[1]+0.10*s[2]);   /* trio: 20/15/10 */
+  if(mem.length===3)return Math.round(0.20*s[0]+0.15*s[1]+0.10*s[2]);   /* trio: 20/15/10 */
+  return Math.round(0.25*s[0]+0.20*s[1]+0.15*s[2]+0.10*s[3]);           /* fyrmanna: 25/20/15/10 (WHS) */
 }
 function pairPts(pairId){
   const pair=S.pairs[pairId];if(!pair)return{holes:[],sum:0,done:0,hcp:null};
@@ -745,8 +751,20 @@ function renderScore(){
   if(!ui.unit){$("#scoregrid").innerHTML=`<div class="tomt">Välj ${ui.pass==='fm'?'spelare':'par'} ovan för att föra score.</div>`;return;}
   if(ui.pass==="fm")renderGridFM(ui.unit);else renderGridEM(ui.unit);
 }
+function ojamnaText(){
+  const st=TEAMS().map(lagStorlek);
+  if(st.some(n=>n===0)||new Set(st).size<2)return "";
+  const k=Number(S.settings.fmKomp)||0;
+  const store=Math.max(...st);
+  let t="\n\n<b>Olika stora lag.</b>";
+  if(k>0)t+=` På förmiddagen får mindre lag +${k} poäng per saknad spelare, eftersom fler bollar ger fler chanser i bästboll.`;
+  if(store===4&&st.includes(3))t+=` På eftermiddagen spelar varje lag scramblen tillsammans: fyrmannascramble (25/20/15/10 %) mot trio (20/15/10 %). Trion har <b>dubbelslag</b>: på varje hål utser trion en spelare som slår två bollar i varje slag hela hålet, som om hen vore lagets fjärde spelare. Var och en har dubbelslag på exakt tre hål.`;
+  return t;
+}
+function hcpEtikett(n){return n>=4?"Fyrmanna-hcp (25/20/15/10)":n===3?"Trio-hcp (20/15/10)":"Par-hcp (35/15)";}
+function hcpAndelText(n){return n>=4?"25/20/15/10 % av 9-håls-spelhcp, lägst först":n===3?"20/15/10 % av lägsta/mellersta/högsta 9-håls-spelhcp":"35 % lägre + 15 % högre 9-håls-spelhcp";}
 function pairName(id){const pr=S.pairs[id];if(!pr)return"?";
-  const n=[pr.p1,pr.p2,pr.p3].filter(Boolean).map(x=>S.players[x]?S.players[x].name:"?");
+  const n=[pr.p1,pr.p2,pr.p3,pr.p4].filter(Boolean).map(x=>S.players[x]?S.players[x].name:"?");
   return n.length?n.join(" & "):"?";}
 function setPass(p){ui.pass=p;ui.unit=null;render();}
 function bytPerson(){
@@ -765,7 +783,7 @@ async function setUnit(u){
     }
   }else if(ME){
     const pr=S.pairs[u];
-    if(pr&&pr.p1!==ME&&pr.p2!==ME){
+    if(pr&&![pr.p1,pr.p2,pr.p3,pr.p4].includes(ME)){
       if(!await fraga(`Du är ${meName()} och det här är inte ditt par. Öppna och ändra ${pairName(u)}s score ändå?`))return;
     }
   }
@@ -785,7 +803,7 @@ function renderGridFM(pid){
 function renderGridEM(pairId){
   const res=pairPts(pairId),row=S.afternoon[pairId]||{};
   const locked=isLocked("em",pairId);
-  let html=`<div class="holemeta" style="margin-bottom:8px">${esc(pairName(pairId))} · ${emCourse().name}, gul tee · Scramble-hcp <b>${res.hcp===null?"?":res.hcp}</b> (35 % lägre + 15 % högre 9-håls-spelhcp)</div>`;
+  let html=`<div class="holemeta" style="margin-bottom:8px">${esc(pairName(pairId))} · ${emCourse().name}, gul tee · Scramble-hcp <b>${res.hcp===null?"?":res.hcp}</b> (${hcpAndelText(pairMembers(S.pairs[pairId]).length)})</div>`;
   if(locked)html+=`<div class="notis"><b>Inlämnad ✓</b> Ronden är låst. Hittat en typo? Be tävlingsledningen låsa upp under Admin.</div>`;
   emRanked().forEach((h,i)=>{html+=holeRow("em",pairId,h.n,h.par,h.idx,shotsOnHole(res.hcp,h.rank9,9),row["h"+h.n],res.holes[i],locked);});
   html+=`<div class="sumrow"><span>Summa Stableford</span><span class="tot">${res.sum} p</span></div>`;
@@ -848,12 +866,20 @@ function emData(){
   });
   return {per,K,kAktiv};
 }
+/* Ojämna lag: det mindre laget får kompensation på förmiddagen, per saknad spelare.
+   Simulering: en extra boll i bästboll ger ca 3 poäng över 18 hål. */
+function lagStorlek(t){return Object.keys(S.players).filter(id=>S.players[id].team===t).length;}
+function kompensation(t){
+  const per=Number(S.settings.fmKomp);if(!(per>0))return 0;
+  const st=TEAMS().map(lagStorlek);if(st.some(n=>n===0))return 0;
+  return per*(Math.max(...st)-lagStorlek(t));
+}
 function standings(){
   const em=emData();
   const data=TEAMS().map(t=>{
     const fm=teamMorning(t);
-    const d={t,fmSum:fm.sum,fmHoles:fm.holes,emSum:em.per[t],tb:tiebreak(t)};
-    d.tot=d.fmSum+d.emSum;return d;
+    const d={t,fmSum:fm.sum,fmHoles:fm.holes,emSum:em.per[t],tb:tiebreak(t),komp:kompensation(t)};
+    d.tot=d.fmSum+d.komp+d.emSum;return d;
   });
   const ranked=[...data].sort((a,b)=>b.tot-a.tot||b.tb.n9-a.tb.n9||b.tb.n6-a.tb.n6||b.tb.n3-a.tb.n3||b.tb.n1-a.tb.n1);
   return {data,ranked,em};
@@ -884,9 +910,9 @@ function renderStallning(){
     const tot=A.tot+B.tot||1;
     $("#tavlan").innerHTML=`<div class="board">
       <div class="versus">
-        <div class="side a"><div class="lagnamn">Lag A</div><div class="pts">${A.tot}</div><div class="holemeta">FM ${A.fmSum} · EM ${A.emSum}</div></div>
+        <div class="side a"><div class="lagnamn">Lag A</div><div class="pts">${A.tot}</div><div class="holemeta">FM ${A.fmSum}${A.komp?" +"+A.komp:""} · EM ${A.emSum}</div></div>
         <div class="mid">VS</div>
-        <div class="side b"><div class="lagnamn">Lag B</div><div class="pts">${B.tot}</div><div class="holemeta">FM ${B.fmSum} · EM ${B.emSum}</div></div>
+        <div class="side b"><div class="lagnamn">Lag B</div><div class="pts">${B.tot}</div><div class="holemeta">FM ${B.fmSum}${B.komp?" +"+B.komp:""} · EM ${B.emSum}</div></div>
       </div>
       <div class="leaderbar"><div class="ba" style="width:${100*A.tot/tot}%"></div><div class="bb" style="width:${100*B.tot/tot}%"></div></div>
       <div class="status">${status}</div>
@@ -894,10 +920,12 @@ function renderStallning(){
   }else{
     $("#tavlan").innerHTML=`<div class="board">${st.ranked.map((d,i)=>
       `<div style="display:flex;justify-content:space-between;align-items:center;padding:13px 14px;border-bottom:1px solid var(--linje)">
-        <span><b class="mono" style="color:${TEAMFARG[d.t]}">${i+1}. Lag ${d.t}</b> <span class="holemeta" style="margin-left:8px">FM ${d.fmSum} · EM ${d.emSum}</span></span>
+        <span><b class="mono" style="color:${TEAMFARG[d.t]}">${i+1}. Lag ${d.t}</b> <span class="holemeta" style="margin-left:8px">FM ${d.fmSum}${d.komp?" +"+d.komp:""} · EM ${d.emSum}</span></span>
         <span class="mono" style="font-size:1.35rem;color:${TEAMFARG[d.t]}">${d.tot}</span>
       </div>`).join("")}<div class="status">${status}</div></div>`;
   }
+  const kompLag=st.data.filter(d=>d.komp>0);
+  if(kompLag.length)$("#tavlan").innerHTML+=`<p class="hint" style="margin-top:8px">${kompLag.map(d=>`Lag ${d.t} spelar med ${lagStorlek(d.t)} och får <b>+${d.komp}</b>`).join(", ")} i kompensation på förmiddagen, eftersom fler bollar ger fler chanser i bästboll.</p>`;
   /* FM: Ut/In-scorekort, en rad per lag */
   const fmTab=(from,to,rubrik)=>{
     const hs=fmCourse().holes.slice(from,to);
@@ -1000,6 +1028,7 @@ function computeAch(){
     });
   }
   $("#set-numteams").value=String(TEAMS().length);
+  if(document.activeElement!==document.getElementById("set-fmkomp"))$("#set-fmkomp").value=S.settings.fmKomp??"3";
   if(document.activeElement!==document.getElementById("set-emcourse"))$("#set-emcourse").value=S.settings.emCourse==="envi"?"envi":"sker9";
   if(!document.activeElement.closest||!document.activeElement.closest("#bolltider")){
     const bollar=computeBolls();
@@ -1092,7 +1121,7 @@ function renderInfo(){
   $("#infolista").innerHTML=
     faq("Schema & hålltider",schemaHtml)+
     faq("Hur funkar lagtävlingen?",
-      `<b>Förmiddag — Bästboll Stableford, 18 hål på Västerås GK.</b>\nAlla spelar sin egen boll med fullt spelhandicap. På varje hål räknas lagets högsta Stableford-poäng som lagets poäng.\n\n<b>Eftermiddag — Scramble, 9 hål på ${emCourse().name}.</b>\nLag om två eller tre: alla slår ut, ni väljer bästa bollen, alla spelar därifrån — hela vägen i hål. Handicap efter lagstorlek: par = 35 % av det lägre + 15 % av det högre; trio = 20 % + 15 % + 10 % av lägsta/mellersta/högsta 9-håls-spelhandicap. Vid udda lagstorlek bildas en trio så att ingen står utanför. Poängbogey även här.\n\n<b>Totalt:</b> förmiddag + eftermiddag. Flest poäng vinner.\n\n<b>Vid lika:</b> bäst på sista 9 hålen av förmiddagens bästboll, sedan sista 6, sista 3, sista hålet. Appen räknar detta automatiskt.`)+
+      `<b>Förmiddag — Bästboll Stableford, 18 hål på Västerås GK.</b>\nAlla spelar sin egen boll med fullt spelhandicap. På varje hål räknas lagets högsta Stableford-poäng som lagets poäng.\n\n<b>Eftermiddag — Scramble, 9 hål på ${emCourse().name}.</b>\nLag om två eller tre: alla slår ut, ni väljer bästa bollen, alla spelar därifrån — hela vägen i hål. Handicap efter lagstorlek: par = 35 % av det lägre + 15 % av det högre; trio = 20 % + 15 % + 10 % av lägsta/mellersta/högsta 9-håls-spelhandicap. Vid udda lagstorlek bildas en trio så att ingen står utanför. Poängbogey även här.${ojamnaText()}\n\n<b>Totalt:</b> förmiddag + eftermiddag. Flest poäng vinner.\n\n<b>Vid lika:</b> bäst på sista 9 hålen av förmiddagens bästboll, sedan sista 6, sista 3, sista hålet. Appen räknar detta automatiskt.`)+
     faq("Sidotävlingar",esc(st.sidor))+
     faq("Kostnader",esc(st.kostnader))+
     faq("Hur för jag score?",
@@ -1152,7 +1181,7 @@ function renderAdmin(){
     `<option value="${id}" ${sel===id?"selected":""}>${esc(S.players[id].name)} (${S.players[id].team||"?"})</option>`).join("");
   $("#parlista").innerHTML=pids.length?pids.map(id=>{
     const pr=S.pairs[id];
-    const lagSet=new Set([pr.p1,pr.p2,pr.p3].filter(x=>x&&S.players[x]).map(x=>S.players[x].team));
+    const lagSet=new Set([pr.p1,pr.p2,pr.p3,pr.p4].filter(x=>x&&S.players[x]).map(x=>S.players[x].team));
     const warn=lagSet.size>1;
     const c=pairHcp(pr);
     return `<div style="display:grid;grid-template-columns:1fr 1fr 40px;gap:6px;margin-bottom:6px;align-items:center">
@@ -1160,7 +1189,8 @@ function renderAdmin(){
       <select onchange="updPair('${id}','p2',this.value)">${opts(pr.p2)}</select>
       <button class="delx" onclick="delPair('${id}')" aria-label="Ta bort">✕</button>
       <select onchange="updPair('${id}','p3',this.value)" style="grid-column:1/2">${`<option value="">— ingen tredje —</option>`+Object.keys(S.players).map(pid2=>`<option value="${pid2}" ${pr.p3===pid2?"selected":""}>${esc(S.players[pid2].name)} (${S.players[pid2].team||"?"})</option>`).join("")}</select>
-      <div style="grid-column:2/4;font-size:.72rem;color:var(--sand);align-self:center;margin-bottom:4px">${pr.p3?"Trio-hcp (20/15/10)":"Par-hcp (35/15)"}: <b style="color:var(--krita)">${c===null?"?":c}</b></div>
+      <select onchange="updPair('${id}','p4',this.value)" style="grid-column:2/3">${`<option value="">— ingen fjärde —</option>`+Object.keys(S.players).map(pid2=>`<option value="${pid2}" ${pr.p4===pid2?"selected":""}>${esc(S.players[pid2].name)} (${S.players[pid2].team||"?"})</option>`).join("")}</select>
+      <div style="grid-column:1/4;font-size:.72rem;color:var(--sand);margin-bottom:4px">${hcpEtikett(pairMembers(pr).length)}: <b style="color:var(--krita)">${c===null?"?":c}</b></div>
       ${warn?`<div style="grid-column:1/4;color:var(--flagga);font-size:.75rem">Obs: spelarna är i olika lag.</div>`:""}
     </div>`;
   }).join(""):`<div class="tomt">Inga scramble-lag ännu — knappen nedan bildar dem automatiskt från lagen.</div>`;
@@ -1270,7 +1300,7 @@ document.getElementById("btn-mockscore").onclick=async()=>{
     });
   });
   Object.keys(S.pairs).forEach(pid=>{
-    const pr=S.pairs[pid],mem=[pr.p1,pr.p2,pr.p3].filter(Boolean);
+    const pr=S.pairs[pid],mem=[pr.p1,pr.p2,pr.p3,pr.p4].filter(Boolean);
     if(!mem.length||!mem.every(x=>S.players[x]&&S.players[x].mock))return;
     if(isLocked("em",pid))return;
     const c=pairHcp(pr);if(c===null)return;
@@ -1289,7 +1319,7 @@ document.getElementById("btn-mockclear").onclick=async()=>{
   if(!await fraga(`Rensa ${mids.length} låtsasspelare? Deras scores och scramble-lag tas också bort. Riktiga spelare rörs inte.`))return;
   const upd={};
   mids.forEach(id=>{upd["players/"+id]=null;upd["morning/"+id]=null;upd["locks/fm/"+id]=null;});
-  const mockPairs=Object.keys(S.pairs).filter(pid=>{const pr=S.pairs[pid];return [pr.p1,pr.p2,pr.p3].some(x=>x&&mids.includes(x));});
+  const mockPairs=Object.keys(S.pairs).filter(pid=>{const pr=S.pairs[pid];return [pr.p1,pr.p2,pr.p3,pr.p4].some(x=>x&&mids.includes(x));});
   mockPairs.forEach(pid=>{upd["pairs/"+pid]=null;upd["afternoon/"+pid]=null;upd["locks/em/"+pid]=null;});
   Object.keys(S.events||{}).forEach(id=>{const e=S.events[id];if(e&&(mids.includes(e.unit)||mockPairs.includes(e.unit)))upd["events/"+id]=null;});
   dbUpdate(upd);
@@ -1302,6 +1332,19 @@ document.getElementById("btn-nyspelare").onclick=()=>{
 document.getElementById("btn-nyttpar").onclick=()=>{dbSet("pairs/par"+Date.now().toString(36),{p1:"",p2:""});};
 document.getElementById("btn-autopar").onclick=async()=>{
   const upd={};let i=0;
+  const storlek=TEAMS().map(lagStorlek);
+  const heltLag=storlek.every(n=>n>=3&&n<=4)&&new Set(storlek).size>1;
+  if(heltLag){
+    TEAMS().forEach(t=>{
+      const m=Object.keys(S.players).filter(id=>S.players[id].team===t);
+      const u={p1:m[0],p2:m[1],p3:m[2]};if(m[3])u.p4=m[3];
+      upd["pairs/g"+(++i)]=u;
+    });
+    if(!await fraga("Lagen är olika stora, så varje lag spelar scramblen som ett enda lag — fyrmannascramble mot trio. Trion får dubbelslag enligt Info-fliken. Befintliga scramble-lag och eftermiddags-scores ersätts."))return;
+    dbUpdate({pairs:null,afternoon:null,"locks/em":null});
+    dbUpdate(upd);
+    return;
+  }
   TEAMS().forEach(t=>{
     let rest=Object.keys(S.players).filter(id=>S.players[id].team===t)
       .sort((a,b)=>Number(S.players[a].hcp??99)-Number(S.players[b].hcp??99));
